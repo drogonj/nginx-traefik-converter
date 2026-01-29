@@ -1,6 +1,60 @@
-package convert
+package middleware
 
-import "strings"
+import (
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
+	"github.com/traefik/traefik/v3/pkg/config/dynamic"
+	traefik "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
+)
+
+/* ---------------- CONFIGURATION SNIPPET ---------------- */
+
+func ConfigurationSnippet(ctx configs.Context) {
+	snippet, ok := ctx.Annotations["nginx.ingress.kubernetes.io/configuration-snippet"]
+	if !ok || strings.TrimSpace(snippet) == "" {
+		return
+	}
+
+	reqHeaders, respHeaders, warnings, unsupported :=
+		parseConfigurationSnippet(snippet)
+
+	// Emit Warnings (gzip, cache, etc.)
+	ctx.Result.Warnings = append(ctx.Result.Warnings, warnings...)
+
+	// If there are unsupported directives (rewrite, lua, etc), do NOT convert
+	if len(unsupported) > 0 {
+		ctx.Result.Warnings = append(ctx.Result.Warnings,
+			"configuration-snippet contains unsupported NGINX directives and was skipped",
+		)
+		return
+	}
+
+	// Nothing convertible
+	if len(reqHeaders) == 0 && len(respHeaders) == 0 {
+		return
+	}
+
+	// Create Headers middleware
+	mw := &traefik.Middleware{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: traefik.SchemeGroupVersion.String(),
+			Kind:       "Middleware",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mwName(ctx, "snippet-headers"),
+			Namespace: ctx.Namespace,
+		},
+		Spec: traefik.MiddlewareSpec{
+			Headers: &dynamic.Headers{
+				CustomRequestHeaders:  reqHeaders,
+				CustomResponseHeaders: respHeaders,
+			},
+		},
+	}
+
+	ctx.Result.Middlewares = append(ctx.Result.Middlewares, mw)
+}
 
 func parseConfigurationSnippet(snippet string) (
 	reqHeaders map[string]string,

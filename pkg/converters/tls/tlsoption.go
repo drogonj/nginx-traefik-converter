@@ -1,12 +1,13 @@
 // pkg/convert/tlsoption.go
-package convert
+package tls
 
 import (
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
 	traefik "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func emitTLSOption(ctx Context, secretName string) {
+func EmitTLSOption(ctx configs.Context, secretName string) {
 	if ctx.Result.TLSOptionRefs == nil {
 		ctx.Result.TLSOptionRefs = make(map[string]string)
 	}
@@ -39,7 +40,7 @@ func emitTLSOption(ctx Context, secretName string) {
 	)
 }
 
-func applyTLSOption(ir *traefik.IngressRoute, ctx Context) {
+func ApplyTLSOption(ir *traefik.IngressRoute, ctx configs.Context) {
 	if opt, ok := ctx.Result.TLSOptionRefs[ctx.IngressName]; ok {
 		ir.Spec.TLS = &traefik.TLS{
 			Options: &traefik.TLSOptionRef{

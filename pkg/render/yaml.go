@@ -2,17 +2,16 @@ package render
 
 import (
 	"fmt"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
 	"log"
 	"os"
 	"path/filepath"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
-
-	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/convert"
 )
 
-func WriteYAML(res convert.Result, outDir string) error {
+func WriteYAML(res configs.Result, outDir string) error {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return err
 	}

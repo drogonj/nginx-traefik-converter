@@ -1,30 +1,38 @@
 package convert
 
-func Run(ctx Context) error {
-	rewriteTarget(ctx)
-	sslRedirect(ctx)
-	basicAuth(ctx)
+import (
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/converters/ingressroute"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/converters/middleware"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/converters/tls"
+)
 
-	if err := cors(ctx); err != nil {
+func Run(ctx configs.Context, opts configs.Options) error {
+	middleware.RewriteTarget(ctx)
+	middleware.SSLRedirect(ctx)
+	middleware.BasicAuth(ctx)
+
+	if err := middleware.CORS(ctx); err != nil {
 		return err
 	}
-	rateLimit(ctx)
+	middleware.RateLimit(ctx)
 
-	if err := bodySize(ctx); err != nil {
+	if err := middleware.BodySize(ctx); err != nil {
 		return err
 	}
 
-	extraAnnotations(ctx)
-	handleAuthTLSVerifyClient(ctx)
-	configurationSnippet(ctx)
+	middleware.ExtraAnnotations(ctx)
+	tls.HandleAuthTLSVerifyClient(ctx)
+	middleware.ConfigurationSnippet(ctx)
+	middleware.HandleProxyBufferSize(ctx, opts) // 👈 heuristic-aware
 
-	if needsIngressRoute(ctx.Annotations) {
-		if err := buildIngressRoute(ctx); err != nil {
+	if ingressroute.NeedsIngressRoute(ctx.Annotations) {
+		if err := ingressroute.BuildIngressRoute(ctx); err != nil {
 			ctx.Result.Warnings = append(ctx.Result.Warnings, err.Error())
 		}
 	}
 
-	warnings(ctx)
+	middleware.Warnings(ctx)
 
 	return nil
 }

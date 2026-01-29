@@ -1,6 +1,10 @@
-package convert
+package tls
 
-func handleAuthTLSVerifyClient(ctx Context) {
+import (
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
+)
+
+func HandleAuthTLSVerifyClient(ctx configs.Context) {
 	verify := ctx.Annotations["nginx.ingress.kubernetes.io/auth-tls-verify-client"]
 	if verify != "on" && verify != "true" {
 		return
@@ -14,5 +18,5 @@ func handleAuthTLSVerifyClient(ctx Context) {
 		return
 	}
 
-	emitTLSOption(ctx, secret)
+	EmitTLSOption(ctx, secret)
 }

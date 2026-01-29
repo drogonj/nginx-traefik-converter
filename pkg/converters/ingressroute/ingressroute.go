@@ -1,7 +1,9 @@
-package convert
+package ingressroute
 
 import (
 	"fmt"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/converters/tls"
 	traefik "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,62 +16,7 @@ type routeGroup struct {
 	routes []traefik.Route
 }
 
-//func buildIngressRoute(ctx Context, scheme string) error {
-//	ing := ctx.Ingress
-//
-//	ir := &traefik.IngressRoute{
-//		ObjectMeta: metav1.ObjectMeta{
-//			Name:      ing.Name,
-//			Namespace: ing.Namespace,
-//		},
-//		Spec: traefik.IngressRouteSpec{
-//			EntryPoints: []string{"web", "websecure"},
-//			Routes:      []traefik.Route{},
-//		},
-//	}
-//
-//	for _, rule := range ing.Spec.Rules {
-//		if rule.HTTP == nil {
-//			continue
-//		}
-//
-//		for _, path := range rule.HTTP.Paths {
-//			svc := path.Backend.Service
-//			if svc == nil {
-//				continue
-//			}
-//
-//			route := traefik.Route{
-//				Kind:  "Rule",
-//				Match: buildMatch(rule.Host, path.Path),
-//				Services: []traefik.Service{
-//					{
-//						LoadBalancerSpec: traefik.LoadBalancerSpec{
-//							Name: svc.Name,
-//							Port: intstr.IntOrString{
-//								Type:   intstr.Int,
-//								IntVal: int32(svc.Port.Number),
-//							},
-//							Scheme: scheme,
-//						},
-//					},
-//				},
-//				Middlewares: middlewareRefs(ctx),
-//			}
-//
-//			ir.Spec.Routes = append(ir.Spec.Routes, route)
-//		}
-//	}
-//
-//	// Only append if we actually added routes
-//	if len(ir.Spec.Routes) > 0 {
-//		ctx.Result.IngressRoutes = append(ctx.Result.IngressRoutes, ir)
-//	}
-//
-//	return nil
-//}
-
-func buildIngressRoute(ctx Context) error {
+func BuildIngressRoute(ctx configs.Context) error {
 	ing := ctx.Ingress
 
 	// 1️⃣ Resolve backend protocol ONCE (Ingress-wide)
@@ -153,7 +100,7 @@ func buildIngressRoute(ctx Context) error {
 		},
 	}
 
-	applyTLSOption(ir, ctx)
+	tls.ApplyTLSOption(ir, ctx)
 
 	ctx.Result.IngressRoutes = append(ctx.Result.IngressRoutes, ir)
 	return nil
@@ -166,7 +113,7 @@ func buildMatch(host, path string) string {
 	return fmt.Sprintf("Host(`%s`) && PathPrefix(`%s`)", host, path)
 }
 
-func middlewareRefs(ctx Context) []traefik.MiddlewareRef {
+func middlewareRefs(ctx configs.Context) []traefik.MiddlewareRef {
 	var refs []traefik.MiddlewareRef
 	for _, mw := range ctx.Result.Middlewares {
 		refs = append(refs, traefik.MiddlewareRef{

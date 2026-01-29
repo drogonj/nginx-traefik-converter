@@ -3,6 +3,7 @@ module github.com/nikhilsbhat/ingress-traefik-converter
 go 1.25.1
 
 require (
+	github.com/spf13/cobra v1.9.1
 	github.com/traefik/traefik/v3 v3.6.7
 	k8s.io/api v0.34.3
 	k8s.io/apimachinery v0.35.0
@@ -37,6 +38,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/http-wasm/http-wasm-host-go v0.7.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.13-0.20220915233716-71ac16282d12 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
@@ -48,6 +50,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/traefik/paerser v0.2.2 // indirect
 	github.com/unrolled/render v1.0.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect

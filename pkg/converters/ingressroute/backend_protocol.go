@@ -1,30 +1,9 @@
-package convert
+package ingressroute
 
 import (
 	"fmt"
 	"strings"
 )
-
-//func detectBackendProtocol(ctx Context) (string, bool, error) {
-//	proto := ctx.Annotations["nginx.ingress.kubernetes.io/backend-protocol"]
-//
-//	if ctx.Annotations["nginx.ingress.kubernetes.io/grpc-backend"] == "true" && proto == "" {
-//		proto = "GRPC"
-//	}
-//
-//	switch strings.ToUpper(proto) {
-//	case "", "HTTP":
-//		return "http", false, nil
-//	case "HTTPS":
-//		return "https", true, nil
-//	case "GRPC":
-//		return "h2c", true, nil
-//	case "GRPCS":
-//		return "https", true, nil
-//	default:
-//		return "", false, fmt.Errorf("unsupported backend-protocol: %s", proto)
-//	}
-//}
 
 func resolveScheme(
 	annotations map[string]string,
@@ -72,7 +51,7 @@ func entryPointsForScheme(scheme string) []string {
 	}
 }
 
-func needsIngressRoute(ann map[string]string) bool {
+func NeedsIngressRoute(ann map[string]string) bool {
 	if ann["nginx.ingress.kubernetes.io/grpc-backend"] == "true" {
 		return true
 	}
