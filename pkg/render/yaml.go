@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// WriteYAML writes the translated inputs to respective files.
 func WriteYAML(res configs.Result, outDir string) error {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return err

@@ -8,6 +8,10 @@ import (
 
 /* ---------------- BASIC AUTH ---------------- */
 
+// BasicAuth handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/auth-secret"
+//   - "nginx.ingress.kubernetes.io/auth-realm"
 func BasicAuth(ctx configs.Context) {
 	if ctx.Annotations["nginx.ingress.kubernetes.io/auth-type"] != "basic" {
 		return

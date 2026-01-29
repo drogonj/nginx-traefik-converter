@@ -5,6 +5,7 @@ import (
 	"log/slog"
 )
 
+// Context holds the necessary info required to run the converters.
 type Context struct {
 	Ingress     *netv1.Ingress    `yaml:"ingress,omitempty" json:"ingress,omitempty"`
 	IngressName string            `yaml:"ingress_name,omitempty" json:"ingress_name,omitempty"`
@@ -14,6 +15,7 @@ type Context struct {
 	log         *slog.Logger
 }
 
+// New returns a new instance of Context when invoked.
 func New(ingress *netv1.Ingress, result *Result) *Context {
 	return &Context{
 		Ingress:     ingress,

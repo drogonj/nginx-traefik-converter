@@ -7,6 +7,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+/* ---------------- PROXY BUFFER SIZE ---------------- */
+
+// HandleProxyBufferSize handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/proxy-buffer-size"
 func HandleProxyBufferSize(ctx configs.Context, opts configs.Options) {
 	val, ok := ctx.Annotations["nginx.ingress.kubernetes.io/proxy-buffer-size"]
 	if !ok {

@@ -29,9 +29,3 @@ func setLogLevel(logLevel string) slog.Level {
 		return slog.LevelInfo
 	}
 }
-
-//
-//// GetLogger gets the initialised logger.
-//func (cfg *Context) GetLogger() *slog.Logger {
-//	return cfg.log
-//}

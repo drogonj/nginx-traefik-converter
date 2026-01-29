@@ -11,11 +11,7 @@ import (
 	"strings"
 )
 
-type routeGroup struct {
-	scheme string
-	routes []traefik.Route
-}
-
+// BuildIngressRoute builds ingress routes to nginx ingresses if required.
 func BuildIngressRoute(ctx configs.Context) error {
 	ing := ctx.Ingress
 
@@ -104,13 +100,6 @@ func BuildIngressRoute(ctx configs.Context) error {
 
 	ctx.Result.IngressRoutes = append(ctx.Result.IngressRoutes, ir)
 	return nil
-}
-
-func buildMatch(host, path string) string {
-	if host == "" {
-		return fmt.Sprintf("PathPrefix(`%s`)", path)
-	}
-	return fmt.Sprintf("Host(`%s`) && PathPrefix(`%s`)", host, path)
 }
 
 func middlewareRefs(ctx configs.Context) []traefik.MiddlewareRef {

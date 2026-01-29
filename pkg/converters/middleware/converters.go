@@ -5,12 +5,9 @@ import (
 	"strings"
 )
 
-func mwName(ctx configs.Context, suffix string) string {
-	return ctx.IngressName + "-" + suffix
-}
-
 /* ---------------- WARNINGS ---------------- */
 
+// Warnings adds warnings to the parsed annotations if any.
 func Warnings(ctx configs.Context) {
 	for k := range ctx.Annotations {
 		if strings.Contains(k, "auth-tls") ||
@@ -20,4 +17,8 @@ func Warnings(ctx configs.Context) {
 			ctx.Result.Warnings = append(ctx.Result.Warnings, k+" is not safely convertible")
 		}
 	}
+}
+
+func mwName(ctx configs.Context, suffix string) string {
+	return ctx.IngressName + "-" + suffix
 }

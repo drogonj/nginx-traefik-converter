@@ -9,6 +9,10 @@ import (
 
 /* ---------------- REDIRECT ---------------- */
 
+// SSLRedirect handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/ssl-redirect"
+//   - "nginx.ingress.kubernetes.io/force-ssl-redirect"
 func SSLRedirect(ctx configs.Context) {
 	ssl := ctx.Annotations["nginx.ingress.kubernetes.io/ssl-redirect"]
 	force := ctx.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"]

@@ -11,6 +11,16 @@ import (
 
 /* ---------------- CORS ---------------- */
 
+// CORS handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/enable-cors"
+//   - "nginx.ingress.kubernetes.io/cors-allow-origin"
+//   - "nginx.ingress.kubernetes.io/cors-allow-methods"
+//   - "nginx.ingress.kubernetes.io/cors-allow-headers"
+//   - "nginx.ingress.kubernetes.io/cors-allow-credentials"
+//   - "nginx.ingress.kubernetes.io/cors-max-age"
+//   - "nginx.ingress.kubernetes.io/cors-expose-headers"
+//   - "nginx.ingress.kubernetes.io/cors-expose-headers"
 func CORS(ctx configs.Context) error {
 	if ctx.Annotations["nginx.ingress.kubernetes.io/enable-cors"] != "true" {
 		return nil

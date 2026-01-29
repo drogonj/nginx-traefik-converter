@@ -6,6 +6,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ListAllIngresses list all the ingresses from the specified namespace
+// This paginates and returns all available ingresses from the cluster.
 func (cfg *Config) ListAllIngresses() ([]netv1.Ingress, error) {
 
 	const pageSize int64 = 100

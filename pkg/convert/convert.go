@@ -7,6 +7,12 @@ import (
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/converters/tls"
 )
 
+// Run processes ingress annotations using the available converters.
+// It is the core function responsible for converting NGINX Ingress
+// annotations into their Traefik equivalents.
+// Supported Annotations:
+//
+//	-
 func Run(ctx configs.Context, opts configs.Options) error {
 	middleware.RewriteTarget(ctx)
 	middleware.SSLRedirect(ctx)

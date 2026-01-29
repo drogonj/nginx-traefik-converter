@@ -1,4 +1,3 @@
-// pkg/convert/tlsoption.go
 package tls
 
 import (
@@ -7,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func EmitTLSOption(ctx configs.Context, secretName string) {
+func emitTLSOption(ctx configs.Context, secretName string) {
 	if ctx.Result.TLSOptionRefs == nil {
 		ctx.Result.TLSOptionRefs = make(map[string]string)
 	}
@@ -40,6 +39,7 @@ func EmitTLSOption(ctx configs.Context, secretName string) {
 	)
 }
 
+// ApplyTLSOption applies TLS configs to ingress routes.
 func ApplyTLSOption(ir *traefik.IngressRoute, ctx configs.Context) {
 	if opt, ok := ctx.Result.TLSOptionRefs[ctx.IngressName]; ok {
 		ir.Spec.TLS = &traefik.TLS{

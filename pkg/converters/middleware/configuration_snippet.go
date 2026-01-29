@@ -10,6 +10,9 @@ import (
 
 /* ---------------- CONFIGURATION SNIPPET ---------------- */
 
+// ConfigurationSnippet handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/configuration-snippet"
 func ConfigurationSnippet(ctx configs.Context) {
 	snippet, ok := ctx.Annotations["nginx.ingress.kubernetes.io/configuration-snippet"]
 	if !ok || strings.TrimSpace(snippet) == "" {

@@ -10,6 +10,9 @@ import (
 
 /* ---------------- BODY SIZE ---------------- */
 
+// BodySize handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/proxy-body-size"
 func BodySize(ctx configs.Context) error {
 	val, ok := ctx.Annotations["nginx.ingress.kubernetes.io/proxy-body-size"]
 	if !ok {

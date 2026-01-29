@@ -51,6 +51,7 @@ func entryPointsForScheme(scheme string) []string {
 	}
 }
 
+// NeedsIngressRoute makes the decision on requirement of ingress routes.
 func NeedsIngressRoute(ann map[string]string) bool {
 	if ann["nginx.ingress.kubernetes.io/grpc-backend"] == "true" {
 		return true

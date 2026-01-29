@@ -48,15 +48,6 @@ func getImportCommand() *cobra.Command {
 		Example: ``,
 		PreRunE: setCLIClient,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			//ing, err := ingress.Load(cliCfg.IngressFile)
-			//if err != nil {
-			//	logger.Error("loading ingress errored",
-			//		slog.Any("ingress", ing.Name),
-			//		slog.Any("error:", err.Error()))
-			//
-			//	return err
-			//}
-
 			ingresses, err := kubeConfig.ListAllIngresses()
 			if err != nil {
 				return err

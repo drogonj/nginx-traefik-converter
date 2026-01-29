@@ -2,6 +2,7 @@ package configs
 
 import "sigs.k8s.io/controller-runtime/pkg/client"
 
+// Result holds the translated configs for a nginx ingress.
 type Result struct {
 	Middlewares   []client.Object
 	IngressRoutes []client.Object

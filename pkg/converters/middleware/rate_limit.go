@@ -9,6 +9,10 @@ import (
 
 /* ---------------- RATE LIMIT ---------------- */
 
+// RateLimit handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/limit-rps"
+//   - "nginx.ingress.kubernetes.io/limit-burst-multiplier"
 func RateLimit(ctx configs.Context) {
 	rps, ok := ctx.Annotations["nginx.ingress.kubernetes.io/limit-rps"]
 	if !ok {

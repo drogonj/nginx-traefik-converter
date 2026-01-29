@@ -9,6 +9,9 @@ import (
 
 /* ---------------- REWRITE ---------------- */
 
+// RewriteTarget handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/rewrite-target"
 func RewriteTarget(ctx configs.Context) {
 	val, ok := ctx.Annotations["nginx.ingress.kubernetes.io/rewrite-target"]
 	if !ok {

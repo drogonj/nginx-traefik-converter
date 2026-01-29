@@ -6,6 +6,15 @@ import (
 
 /* ---------------- UNSUPPORTED/REDUNDANT ANNOTATIONS ---------------- */
 
+// ExtraAnnotations handles the below unsupported annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/proxy-buffer-size"
+//   - "nginx.ingress.kubernetes.io/proxy-buffering"
+//   - "nginx.ingress.kubernetes.io/service-upstream"
+//   - "nginx.ingress.kubernetes.io/enable-opentracing"
+//   - "nginx.ingress.kubernetes.io/enable-opentelemetry"
+//   - "nginx.ingress.kubernetes.io/backend-protocol"
+//   - "nginx.ingress.kubernetes.io/grpc-backend"
 func ExtraAnnotations(ctx configs.Context) {
 	if _, ok := ctx.Annotations["nginx.ingress.kubernetes.io/proxy-buffer-size"]; ok {
 		ctx.Result.Warnings = append(ctx.Result.Warnings,

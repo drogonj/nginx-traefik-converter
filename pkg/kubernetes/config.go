@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// Config holds values required to initialise the kubernetes client.
 type Config struct {
 	NameSpace string `json:"name_space,omitempty" yaml:"name_space,omitempty"`
 	Context   string `json:"context,omitempty"    yaml:"context,omitempty"`
@@ -18,6 +19,7 @@ type Config struct {
 	logger    *slog.Logger
 }
 
+// SetKubeClient sets kube client to Config with specified configurations.
 func (cfg *Config) SetKubeClient() error {
 	kubeConfig := os.Getenv("KUBECONFIG")
 
@@ -43,6 +45,7 @@ func (cfg *Config) SetKubeClient() error {
 	return nil
 }
 
+// SetKubeNameSpace sets namespace to the initialised client.
 func (cfg *Config) SetKubeNameSpace() {
 	if cfg.All {
 		cfg.NameSpace = ""
@@ -51,6 +54,7 @@ func (cfg *Config) SetKubeNameSpace() {
 	cfg.logger.Debug("using namespace", slog.Any("namespace", cfg.NameSpace))
 }
 
+// GetKubeClient returns the configured kube client.
 func (cfg *Config) GetKubeClient() *kubernetes.Clientset {
 	return cfg.clientSet
 }
@@ -69,10 +73,12 @@ func buildConfigWithContextFromFlags(kubeContext, kubeConfigPath string) (*rest.
 	).ClientConfig()
 }
 
+// SetLogger sets logger to the Config.
 func (cfg *Config) SetLogger(logger *slog.Logger) {
 	cfg.logger = logger
 }
 
+// New returns new instance of Config when invoked.
 func New() *Config {
 	return &Config{}
 }

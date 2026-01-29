@@ -4,6 +4,10 @@ import (
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
 )
 
+// HandleAuthTLSVerifyClient is responsible for handling TLS configs of nginx annotations, handles the below.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/auth-tls-verify-client"
+//   - "nginx.ingress.kubernetes.io/auth-tls-secret"
 func HandleAuthTLSVerifyClient(ctx configs.Context) {
 	verify := ctx.Annotations["nginx.ingress.kubernetes.io/auth-tls-verify-client"]
 	if verify != "on" && verify != "true" {
@@ -18,5 +22,5 @@ func HandleAuthTLSVerifyClient(ctx configs.Context) {
 		return
 	}
 
-	EmitTLSOption(ctx, secret)
+	emitTLSOption(ctx, secret)
 }
