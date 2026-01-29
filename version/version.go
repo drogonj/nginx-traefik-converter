@@ -1,4 +1,4 @@
-// Package version powers the versioning of terragen.
+// Package version powers the versioning of ingress-traefik-converter.
 package version
 
 import (

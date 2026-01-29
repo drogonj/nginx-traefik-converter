@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/kubernetes"
 	"github.com/spf13/cobra"
 	"log/slog"
 )
@@ -16,9 +17,10 @@ type Config struct {
 }
 
 var (
-	cliCfg = new(Config)
-	opts   = configs.NewOptions()
-	logger *slog.Logger
+	cliCfg     = new(Config)
+	opts       = configs.NewOptions()
+	logger     *slog.Logger
+	kubeConfig = kubernetes.New()
 )
 
 // Registers all global flags to utility.
@@ -33,6 +35,12 @@ func registerCommonFlags(cmd *cobra.Command) {
 		"when enabled the output would not be color encoded")
 	cmd.PersistentFlags().BoolVarP(&opts.ProxyBufferHeuristic, "proxy-buffer-heuristic", "", false,
 		"when enabled, the nginx ingress annotation 'proxy-buffer-size' gets heuristically mapped to Traefik buffering")
+	cmd.PersistentFlags().StringVarP(&kubeConfig.Context, "context", "c", "",
+		"kubernetes context to use")
+	cmd.PersistentFlags().StringVarP(&kubeConfig.NameSpace, "namespace", "n", "default",
+		"kubernetes namespace to set")
+	cmd.PersistentFlags().BoolVarP(&kubeConfig.All, "all", "a", false,
+		"when set, all namespaces would be considered")
 }
 
 func registerImportFlags(cmd *cobra.Command) {

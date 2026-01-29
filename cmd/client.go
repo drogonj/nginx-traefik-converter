@@ -6,18 +6,15 @@ import (
 )
 
 func setCLIClient(_ *cobra.Command, _ []string) error {
-	//writer = os.Stdout
-	//
-	//if len(cliCfg.ToFile) != 0 {
-	//	filePTR, err := os.Create(cliCfg.ToFile)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	writer = filePTR
-	//}
-
 	logger = log.SetLogger(cliCfg.LogLevel)
+
+	kubeConfig.SetLogger(logger)
+
+	if err := kubeConfig.SetKubeClient(); err != nil {
+		return err
+	}
+
+	kubeConfig.SetKubeNameSpace()
 
 	return nil
 }

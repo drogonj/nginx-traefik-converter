@@ -19,13 +19,13 @@ func CORS(ctx configs.Context) error {
 	h := &dynamic.Headers{}
 
 	if v := ctx.Annotations["nginx.ingress.kubernetes.io/cors-allow-origin"]; v != "" {
-		h.AccessControlAllowOriginList = strings.Split(v, ",")
+		h.AccessControlAllowOriginList = headersNeat(v)
 	}
 	if v := ctx.Annotations["nginx.ingress.kubernetes.io/cors-allow-methods"]; v != "" {
-		h.AccessControlAllowMethods = strings.Split(v, ",")
+		h.AccessControlAllowMethods = headersNeat(v)
 	}
 	if v := ctx.Annotations["nginx.ingress.kubernetes.io/cors-allow-headers"]; v != "" {
-		h.AccessControlAllowHeaders = strings.Split(v, ",")
+		h.AccessControlAllowHeaders = headersNeat(v)
 	}
 	if v := ctx.Annotations["nginx.ingress.kubernetes.io/cors-allow-credentials"]; v == "true" {
 		h.AccessControlAllowCredentials = true
@@ -39,10 +39,10 @@ func CORS(ctx configs.Context) error {
 		h.AccessControlMaxAge = secs
 	}
 	if v := ctx.Annotations["nginx.ingress.kubernetes.io/cors-expose-headers"]; v != "" {
-		h.AccessControlExposeHeaders = strings.Split(v, ",")
+		h.AccessControlExposeHeaders = headersNeat(v)
 	}
 	if v := ctx.Annotations["nginx.ingress.kubernetes.io/cors-expose-headers"]; v != "" {
-		h.AccessControlExposeHeaders = strings.Split(v, ",")
+		h.AccessControlExposeHeaders = headersNeat(v)
 	}
 
 	ctx.Result.Middlewares = append(ctx.Result.Middlewares, &traefik.Middleware{
@@ -58,4 +58,13 @@ func CORS(ctx configs.Context) error {
 	})
 
 	return nil
+}
+
+func headersNeat(value string) []string {
+	headers := strings.Split(value, ",")
+	for i, header := range headers {
+		headers[i] = strings.TrimSpace(header)
+	}
+
+	return headers
 }

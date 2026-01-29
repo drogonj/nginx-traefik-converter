@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/convert"
-	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/ingress"
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/render"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/nikhilsbhat/ingress-traefik-converter/version"
@@ -48,31 +48,38 @@ func getImportCommand() *cobra.Command {
 		Example: ``,
 		PreRunE: setCLIClient,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			ing, err := ingress.Load(cliCfg.IngressFile)
+			//ing, err := ingress.Load(cliCfg.IngressFile)
+			//if err != nil {
+			//	logger.Error("loading ingress errored",
+			//		slog.Any("ingress", ing.Name),
+			//		slog.Any("error:", err.Error()))
+			//
+			//	return err
+			//}
+
+			ingresses, err := kubeConfig.ListAllIngresses()
 			if err != nil {
-				logger.Error("loading ingress errored",
-					slog.Any("ingress", ing.Name),
-					slog.Any("error:", err.Error()))
-
 				return err
 			}
 
-			res := configs.NewResult()
-			ctx := configs.New(ing, res)
+			for _, ingress := range ingresses {
+				res := configs.NewResult()
+				ctx := configs.New(&ingress, res)
 
-			if err = convert.Run(*ctx, *opts); err != nil {
-				logger.Error("converting ingress to traefik errored",
-					slog.Any("ingress", ing.Name),
-					slog.Any("error:", err.Error()))
-				return err
-			}
+				if err = convert.Run(*ctx, *opts); err != nil {
+					logger.Error("converting ingress to traefik errored",
+						slog.Any("ingress", ingress.Name),
+						slog.Any("error:", err.Error()))
+					return err
+				}
 
-			if err = render.WriteYAML(*res, "./out"); err != nil {
-				logger.Error("writing converted traefik ingress errored",
-					slog.Any("ingress", ing.Name),
-					slog.Any("error:", err.Error()))
+				if err = render.WriteYAML(*res, filepath.Join("./out", ingress.Name)); err != nil {
+					logger.Error("writing converted traefik ingress errored",
+						slog.Any("ingress", ingress.Name),
+						slog.Any("error:", err.Error()))
 
-				return err
+					return err
+				}
 			}
 
 			return nil
