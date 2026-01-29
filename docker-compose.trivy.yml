@@ -1,0 +1,7 @@
+services:
+  trivy:
+    image: aquasec/trivy:0.68.2
+    volumes:
+      - ./:/ingress-traefik-converter
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $HOME/Library/Caches:/root/.cache/
