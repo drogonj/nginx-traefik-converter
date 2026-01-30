@@ -1,8 +1,9 @@
 package ingressroute
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/errors"
 )
 
 func resolveScheme(
@@ -24,7 +25,7 @@ func resolveScheme(
 	case "GRPCS":
 		return "https", nil
 	default:
-		return "", fmt.Errorf("unsupported backend-protocol")
+		return "", &errors.ConverterError{Message: "unsupported backend-protocol"}
 	}
 }
 

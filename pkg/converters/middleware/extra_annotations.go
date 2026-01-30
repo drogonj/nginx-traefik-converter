@@ -8,7 +8,6 @@ import (
 
 // ExtraAnnotations handles the below unsupported annotations.
 // Annotations:
-//   - "nginx.ingress.kubernetes.io/proxy-buffer-size"
 //   - "nginx.ingress.kubernetes.io/proxy-buffering"
 //   - "nginx.ingress.kubernetes.io/service-upstream"
 //   - "nginx.ingress.kubernetes.io/enable-opentracing"
@@ -17,12 +16,6 @@ import (
 //   - "nginx.ingress.kubernetes.io/grpc-backend"
 func ExtraAnnotations(ctx configs.Context) {
 	ctx.Log.Debug("running converter ExtraAnnotations")
-
-	if _, ok := ctx.Annotations["nginx.ingress.kubernetes.io/proxy-buffer-size"]; ok {
-		ctx.Result.Warnings = append(ctx.Result.Warnings,
-			"proxy-buffer-size has no Traefik equivalent",
-		)
-	}
 
 	if ctx.Annotations["nginx.ingress.kubernetes.io/proxy-buffering"] == "off" {
 		ctx.Result.Warnings = append(ctx.Result.Warnings,

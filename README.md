@@ -137,8 +137,8 @@ docker pull ghcr.io/nikhilsbhat/ingress-traefik-converter:<github-release-tag>
 To convert the existing Nginx ingress to Traefik configurations:
 
 ```sh
-ingress-traefik-converter convert -a #should convert ingress present in all the namespace.
-ingress-traefik-converter convert -c kube-context-one #when you have multiple contexts in same kubeconfig file.
+ingress-traefik-converter convert -a                                   #should convert ingress present in all the namespace.
+ingress-traefik-converter convert -c kube-context-one                  #when you have multiple contexts in same kubeconfig file.
 ingress-traefik-converter convert -c kube-context-one -n namespace-one #adding to above, operations limited to namespace 'namespace-one'  
 ```
 

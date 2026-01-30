@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"strconv"
+	"fmt"
 
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/errors"
 	"github.com/traefik/traefik/v3/pkg/config/dynamic"
 	traefik "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,9 +23,11 @@ func BodySize(ctx configs.Context) error {
 		return nil
 	}
 
-	intValue, err := strconv.ParseInt(val, 10, 64)
+	intValue, err := parseSizeBytes(val)
 	if err != nil {
-		return err
+		return &errors.ConverterError{
+			Message: fmt.Sprintf("invalid proxy-body-size %q: %s", val, err.Error()),
+		}
 	}
 
 	ctx.Result.Middlewares = append(ctx.Result.Middlewares, &traefik.Middleware{

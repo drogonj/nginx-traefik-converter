@@ -9,6 +9,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type unsupportedDirective struct {
+	Name       string
+	Enterprise bool
+	Message    string
+}
+
+var unsupported = []unsupportedDirective{
+	{"gzip", false, "gzip is only configurable via middleware in Traefik and was ignored"},
+	{"gzip_comp_level", false, "gzip_comp_level is not configurable in Traefik"},
+	{"gzip_types", false, "gzip_types is not configurable in Traefik"},
+	{"proxy_buffer_size", false, "proxy_buffer_size is not supported in Traefik"},
+	{"proxy_cache", true, "proxy_cache is not supported in Traefik OSS"},
+}
+
 /* ---------------- CONFIGURATION SNIPPET ---------------- */
 
 // ConfigurationSnippet handles the below annotations.
@@ -22,19 +36,10 @@ func ConfigurationSnippet(ctx configs.Context) {
 		return
 	}
 
-	reqHeaders, respHeaders, warnings, unsupported := parseConfigurationSnippet(snippet)
+	reqHeaders, respHeaders, warnings := parseConfigurationSnippet(snippet)
 
 	// Emit Warnings (gzip, cache, etc.)
 	ctx.Result.Warnings = append(ctx.Result.Warnings, warnings...)
-
-	// If there are unsupported directives (rewrite, lua, etc), do NOT convert
-	if len(unsupported) > 0 {
-		ctx.Result.Warnings = append(ctx.Result.Warnings,
-			"configuration-snippet contains unsupported NGINX directives and was skipped",
-		)
-
-		return
-	}
 
 	// Nothing convertible
 	if len(reqHeaders) == 0 && len(respHeaders) == 0 {
@@ -62,11 +67,10 @@ func ConfigurationSnippet(ctx configs.Context) {
 	ctx.Result.Middlewares = append(ctx.Result.Middlewares, middleware)
 }
 
-func parseConfigurationSnippet(snippet string) (map[string]string, map[string]string, []string, []string) {
+func parseConfigurationSnippet(snippet string) (map[string]string, map[string]string, []string) {
 	reqHeaders := map[string]string{}
 	respHeaders := map[string]string{}
 	warnings := make([]string, 0)
-	unsupported := make([]string, 0)
 
 	lines := strings.Split(snippet, "\n")
 
@@ -76,61 +80,118 @@ func parseConfigurationSnippet(snippet string) (map[string]string, map[string]st
 			continue
 		}
 
-		const proxySetHeaderCount = 3
+		// ─── OPTIONAL WARNING: auto-correct malformed quoting ───
+		if strings.HasSuffix(line, `;"`) || strings.HasSuffix(line, `"`) && !strings.HasSuffix(line, `"`+";") {
+			warnings = append(warnings,
+				"configuration-snippet contained malformed quoting and was auto-corrected: "+line,
+			)
+		}
 
 		switch {
-		case strings.HasPrefix(line, "more_set_headers"), // ───── Headers (convertible) ─────
-			strings.HasPrefix(line, "add_header"):
+		case strings.HasPrefix(line, "add_header"),
+			strings.HasPrefix(line, "more_set_headers"):
 			if h := extractHeader(line); h != nil {
 				respHeaders[h[0]] = h[1]
+			} else {
+				warnings = append(warnings,
+					"failed to parse header directive: "+line,
+				)
 			}
-		case strings.HasPrefix(line, "proxy_set_header"): // proxy_set_header X-Foo bar;
+
+		case strings.HasPrefix(line, "proxy_set_header"):
+			line = strings.TrimSuffix(line, ";")
 			parts := strings.Fields(line)
-			if len(parts) >= proxySetHeaderCount {
-				reqHeaders[parts[1]] = strings.TrimSuffix(parts[2], ";")
+
+			if len(parts) >= 3 {
+				key := strings.Trim(parts[1], `"`)
+				value := strings.Join(parts[2:], " ")
+
+				reqHeaders[key] = value
 			}
-		case strings.HasPrefix(line, "gzip "): // ───── gzip (global-only in Traefik) ─────
+
+			if strings.Contains(line, "$") {
+				warnings = append(warnings,
+					"proxy_set_header uses NGINX variables which are not evaluated by Traefik",
+				)
+			}
+
+		case strings.HasPrefix(line, "gzip "):
+			warnUnsupported(&warnings, unsupported[0])
 			warnings = append(warnings,
 				"gzip must be enabled globally in Traefik static configuration",
 			)
+
 		case strings.HasPrefix(line, "gzip_comp_level"):
-			warnings = append(warnings,
-				"gzip_comp_level is not configurable in Traefik and was ignored, compression level is fixed",
-			)
+			warnUnsupported(&warnings, unsupported[1])
+
 		case strings.HasPrefix(line, "gzip_types"):
+			warnUnsupported(&warnings, unsupported[2])
+
+		case strings.HasPrefix(line, "proxy_buffer_size"):
+			warnUnsupported(&warnings, unsupported[3])
+
+		case strings.HasPrefix(line, "proxy_cache"):
+			warnUnsupported(&warnings, unsupported[4])
+
+		default:
 			warnings = append(warnings,
-				"gzip_types is not configurable in Traefik and was ignored. Compresses a fixed, internal set of MIME types",
+				"unsupported directive in configuration-snippet was ignored: "+line,
 			)
-		case strings.HasPrefix(line, "proxy_cache"): // ───── proxy_cache (not supported) ─────
-			warnings = append(warnings,
-				"proxy_cache is not supported in Traefik OSS and was ignored",
-			)
-		default: // ───── Everything else is unsafe ─────
-			unsupported = append(unsupported, line)
 		}
 	}
 
-	return reqHeaders, respHeaders, warnings, unsupported
+	return reqHeaders, respHeaders, warnings
 }
 
 func extractHeader(line string) []string {
-	// expects: "X-Foo: bar"
-	start := strings.Index(line, "\"")
-	end := strings.LastIndex(line, "\"")
+	line = strings.TrimSpace(line)
+	line = strings.TrimSuffix(line, ";")
+	line = strings.TrimSuffix(line, `"`) // fixes broken YAML quoting
 
-	if start == -1 || end <= start {
+	// ─── more_set_headers "X-Foo: bar" ───
+
+	if strings.HasPrefix(line, "more_set_headers") {
+		start := strings.Index(line, `"`)
+		end := strings.LastIndex(line, `"`)
+
+		if start == -1 || end <= start {
+			return nil
+		}
+
+		kv := strings.SplitN(line[start+1:end], ":", 2)
+		if len(kv) != 2 {
+			return nil
+		}
+
+		return []string{
+			strings.TrimSpace(kv[0]),
+			strings.TrimSpace(kv[1]),
+		}
+	}
+
+	// ─── add_header X-Foo bar;
+	// ─── add_header "X-Foo" "bar baz";
+	fields := strings.Fields(line)
+	if len(fields) < 3 || fields[0] != "add_header" {
 		return nil
 	}
 
-	const extractHeaderCount = 2
+	key := strings.Trim(fields[1], `"`)
+	value := strings.Join(fields[2:], " ")
+	value = strings.Trim(value, `"`)
 
-	keyValue := strings.SplitN(line[start+1:end], ":", extractHeaderCount)
-	if len(keyValue) != extractHeaderCount {
+	if key == "" || value == "" {
 		return nil
 	}
 
-	return []string{
-		strings.TrimSpace(keyValue[0]),
-		strings.TrimSpace(keyValue[1]),
+	return []string{key, value}
+}
+
+func warnUnsupported(warnings *[]string, d unsupportedDirective) {
+	msg := d.Message
+	if d.Enterprise {
+		msg += ". Traefik Enterprise provides an alternative, but it cannot be auto-converted."
 	}
+
+	*warnings = append(*warnings, msg)
 }

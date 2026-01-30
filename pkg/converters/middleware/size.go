@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/errors"
 )
 
 func parseSizeBytes(val string) (int64, error) {
@@ -27,7 +29,7 @@ func parseSizeBytes(val string) (int64, error) {
 
 	n, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid size value: %s", val)
+		return 0, &errors.ConverterError{Message: fmt.Sprintf("invalid size value: %s", val)}
 	}
 
 	return n * multiplier, nil

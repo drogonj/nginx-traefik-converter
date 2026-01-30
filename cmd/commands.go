@@ -62,7 +62,7 @@ func getImportCommand() *cobra.Command {
 						slog.Any("ingress", ingress.Name),
 						slog.Any("error:", err.Error()))
 
-					return err
+					continue
 				}
 
 				if err = render.WriteYAML(*res, filepath.Join("./out", ingress.Name)); err != nil {
@@ -73,6 +73,8 @@ func getImportCommand() *cobra.Command {
 					return err
 				}
 			}
+
+			logger.Info("nginx ingress to traefik conversion completed")
 
 			return nil
 		},
