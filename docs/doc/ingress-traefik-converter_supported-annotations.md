@@ -1,32 +1,28 @@
-## ingress-traefik-converter version
+## ingress-traefik-converter supported-annotations
 
-Command to fetch the version of ingress-traefik-converter installed
+list supported annotaions
 
 ### Synopsis
 
-This will help the user find what version of the ingress-traefik-converter he or she installed in her machine.
+Command list all the annotations that converter supports
 
 ```
-ingress-traefik-converter version [flags]
+ingress-traefik-converter supported-annotations [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for version
-```
-
-### Options inherited from parent commands
-
-```
   -a, --all                      when set, all namespaces would be considered
   -c, --context string           kubernetes context to use
   -f, --file stringArray         root yaml files to be used for importing
+  -h, --help                     help for supported-annotations
       --ingress-file string      path to ingress file
       --log-level string         log level for the ingress-traefik-converter (default "INFO")
   -n, --namespace string         kubernetes namespace to set (default "default")
       --no-color                 when enabled the output would not be color encoded
       --proxy-buffer-heuristic   when enabled, the nginx ingress annotation 'proxy-buffer-size' gets heuristically mapped to Traefik buffering
+      --to-file string           name of the file to which the final imported yaml should be written to
 ```
 
 ### SEE ALSO
