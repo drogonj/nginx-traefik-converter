@@ -19,7 +19,9 @@ import (
 func BodySize(ctx configs.Context) error {
 	ctx.Log.Debug("running converter BodySize")
 
-	val, ok := ctx.Annotations[string(models.ProxyBodySize)]
+	ann := string(models.ProxyBodySize)
+
+	val, ok := ctx.Annotations[ann]
 	if !ok {
 		return nil
 	}
@@ -46,6 +48,8 @@ func BodySize(ctx configs.Context) error {
 			},
 		},
 	})
+
+	ctx.ReportConverted(ann)
 
 	return nil
 }

@@ -16,7 +16,9 @@ import (
 func UpstreamVHost(ctx configs.Context) {
 	ctx.Log.Debug("running converter UpstreamVHost")
 
-	val, ok := ctx.Annotations[string(models.UpstreamVhost)]
+	annUpstreamVhost := string(models.UpstreamVhost)
+
+	val, ok := ctx.Annotations[annUpstreamVhost]
 	if !ok || strings.TrimSpace(val) == "" {
 		return
 	}
@@ -28,4 +30,6 @@ func UpstreamVHost(ctx configs.Context) {
 			},
 		}),
 	)
+
+	ctx.ReportConverted(annUpstreamVhost)
 }

@@ -49,11 +49,15 @@ var unsupported = map[string]unsupportedDirective{
 
 /* ---------------- CONFIGURATION SNIPPET ---------------- */
 
-// ConfigurationSnippets converts nginx.ingress.kubernetes.io/configuration-snippet.
+// ConfigurationSnippets handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/configuration-snippet"
 func ConfigurationSnippets(ctx configs.Context) {
 	ctx.Log.Debug("running converter ConfigurationSnippet")
 
-	snippet, ok := ctx.Annotations[string(models.ConfigurationSnippet)]
+	ann := string(models.ConfigurationSnippet)
+
+	snippet, ok := ctx.Annotations[ann]
 	if !ok {
 		return
 	}
@@ -80,6 +84,8 @@ func ConfigurationSnippets(ctx configs.Context) {
 	}
 
 	convertGenericSnippet(ctx, lines)
+
+	ctx.ReportConverted(ann)
 }
 
 /* ---------------- Generic snippet handling ---------------- */

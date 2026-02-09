@@ -25,8 +25,8 @@ const (
 	LimitRPS             Annotation = "nginx.ingress.kubernetes.io/limit-rps"
 	LimitBurstMultiplier Annotation = "nginx.ingress.kubernetes.io/limit-burst-multiplier"
 	RewriteTarget        Annotation = "nginx.ingress.kubernetes.io/rewrite-target"
-	SslRedirect          Annotation = "nginx.ingress.kubernetes.io/ssl-redirect"
-	ForceSslRedirect     Annotation = "nginx.ingress.kubernetes.io/force-ssl-redirect"
+	SSLRedirect          Annotation = "nginx.ingress.kubernetes.io/ssl-redirect"
+	ForceSSLRedirect     Annotation = "nginx.ingress.kubernetes.io/force-ssl-redirect"
 	UpstreamVhost        Annotation = "nginx.ingress.kubernetes.io/upstream-vhost"
 	ProxyRedirectFrom    Annotation = "nginx.ingress.kubernetes.io/proxy-redirect-from"
 	ProxyRedirectTo      Annotation = "nginx.ingress.kubernetes.io/proxy-redirect-to"
@@ -56,8 +56,8 @@ var AllAnnotations = []Annotation{
 	LimitRPS,
 	LimitBurstMultiplier,
 	RewriteTarget,
-	SslRedirect,
-	ForceSslRedirect,
+	SSLRedirect,
+	ForceSSLRedirect,
 	UpstreamVhost,
 	ProxyRedirectFrom,
 	ProxyRedirectTo,

@@ -1,9 +1,10 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/converters/models"
-	"strings"
 )
 
 /* ---------------- PROXY REDIRECT ---------------- */
@@ -26,25 +27,28 @@ func ServerSnippet(ctx configs.Context) {
 				"nginx.ingress.kubernetes.io/configuration-snippet "+
 				"or converting them manually to a Traefik Headers middleware.",
 		)
+
 		return
 	}
 
 	// Detect header buffer tuning
 	if strings.Contains(snippet, "client_header_buffer_size") ||
 		strings.Contains(snippet, "large_client_header_buffers") {
-
 		ctx.Result.Warnings = append(ctx.Result.Warnings,
 			"server-snippet configures request header buffer sizes. "+
 				"Traefik does not support per-route header buffer tuning. "+
 				"Equivalent settings must be configured globally on entryPoints "+
 				"(e.g. http.maxHeaderBytes) in Traefik static configuration.",
 		)
+
 		return
 	}
 
 	ctx.Result.Warnings = append(ctx.Result.Warnings,
 		"server-snippet injects raw NGINX server configuration which has no Traefik equivalent; skipped",
 	)
+
+	ctx.ReportSkipped(ctx.Annotations[string(models.ServerSnippet)], "injects raw NGINX server-level configuration; no Traefik equivalent")
 }
 
 func isOnlyAddHeader(snippet string) bool {
@@ -54,9 +58,11 @@ func isOnlyAddHeader(snippet string) bool {
 		if line == "" {
 			continue
 		}
+
 		if !strings.HasPrefix(line, "add_header") {
 			return false
 		}
 	}
+
 	return true
 }

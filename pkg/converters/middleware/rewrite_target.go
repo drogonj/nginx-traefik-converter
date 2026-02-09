@@ -18,7 +18,9 @@ import (
 func RewriteTargets(ctx configs.Context) {
 	ctx.Log.Debug("running converter RewriteTarget")
 
-	val, ok := ctx.Annotations[string(models.RewriteTarget)]
+	annRewriteTarget := string(models.RewriteTarget)
+
+	val, ok := ctx.Annotations[annRewriteTarget]
 	if !ok {
 		return
 	}
@@ -47,6 +49,8 @@ func RewriteTargets(ctx configs.Context) {
 			},
 		},
 	})
+
+	ctx.ReportConverted(annRewriteTarget)
 }
 
 func newRewriteMiddleware(

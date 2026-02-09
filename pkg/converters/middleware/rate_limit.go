@@ -15,20 +15,30 @@ import (
 // Annotations:
 //   - "nginx.ingress.kubernetes.io/limit-rps"
 //   - "nginx.ingress.kubernetes.io/limit-burst-multiplier"
-func RateLimit(ctx configs.Context) {
+func RateLimit(ctx configs.Context) error {
 	ctx.Log.Debug("running converter RateLimit")
 
-	rps, ok := ctx.Annotations[string(models.LimitRPS)]
+	annLimitRPS := string(models.LimitRPS)
+	annLimitBurstMultiplier := string(models.LimitBurstMultiplier)
+
+	rps, ok := ctx.Annotations[annLimitRPS]
 	if !ok {
-		return
+		return nil
 	}
 
 	const averageValue = 2
 
-	avg, _ := strconv.Atoi(rps)
+	avg, err := strconv.Atoi(rps)
+	if err != nil {
+		ctx.ReportWarning(annLimitRPS, err.Error())
+		ctx.ReportWarning(annLimitBurstMultiplier, err.Error())
+
+		return err
+	}
+
 	burst := avg * averageValue
 
-	if m := ctx.Annotations[string(models.LimitBurstMultiplier)]; m != "" {
+	if m := ctx.Annotations[annLimitBurstMultiplier]; m != "" {
 		if v, err := strconv.Atoi(m); err == nil {
 			burst = avg * v
 		}
@@ -53,4 +63,9 @@ func RateLimit(ctx configs.Context) {
 			},
 		},
 	})
+
+	ctx.ReportConverted(annLimitRPS)
+	ctx.ReportConverted(annLimitBurstMultiplier)
+
+	return nil
 }

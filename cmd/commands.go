@@ -54,9 +54,12 @@ func getImportCommand() *cobra.Command {
 				return err
 			}
 
+			var globalReport configs.GlobalReport
+
 			for _, ingress := range ingresses {
 				res := configs.NewResult()
 				ctx := configs.New(&ingress, res, logger)
+				ctx.StartIngressReport(ingress.Namespace, ingress.Name)
 
 				if err = convert.Run(*ctx, *opts); err != nil {
 					logger.Error("converting ingress to traefik errored",
@@ -73,6 +76,19 @@ func getImportCommand() *cobra.Command {
 
 					return err
 				}
+
+				if err = printerConfig.PrintIngressSummary(ctx.Result.IngressReport); err != nil {
+					return err
+				}
+
+				globalReport.Ingresses = append(
+					globalReport.Ingresses,
+					ctx.Result.IngressReport,
+				)
+			}
+
+			if err = printerConfig.PrintGlobalSummary(globalReport); err != nil {
+				return err
 			}
 
 			logger.Info("nginx ingress to traefik conversion completed")
@@ -98,8 +114,8 @@ func getSupportedAnnotationCommand() *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			annotations := models.GetAnnotations()
 
-			for _, annoation := range annotations {
-				fmt.Printf("%s\n", annoation)
+			for _, annotation := range annotations {
+				fmt.Printf("%s\n", annotation)
 			}
 
 			return nil

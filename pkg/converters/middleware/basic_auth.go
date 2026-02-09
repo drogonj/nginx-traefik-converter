@@ -11,12 +11,20 @@ import (
 
 // BasicAuth handles the below annotations.
 // Annotations:
+//   - "nginx.ingress.kubernetes.io/auth-type"
 //   - "nginx.ingress.kubernetes.io/auth-secret"
 //   - "nginx.ingress.kubernetes.io/auth-realm"
 func BasicAuth(ctx configs.Context) {
 	ctx.Log.Debug("running converter BasicAuth")
 
-	if ctx.Annotations[string(models.AuthType)] != "basic" {
+	val, ok := ctx.Annotations[string(models.AuthType)]
+	if !ok {
+		return
+	}
+
+	if val != "basic" {
+		ctx.ReportSkipped(string(models.AuthType), "not of type basic")
+
 		return
 	}
 
@@ -36,4 +44,8 @@ func BasicAuth(ctx configs.Context) {
 			},
 		},
 	})
+
+	ctx.ReportConverted(string(models.AuthSecret))
+
+	ctx.ReportConverted(string(models.AuthRealm))
 }

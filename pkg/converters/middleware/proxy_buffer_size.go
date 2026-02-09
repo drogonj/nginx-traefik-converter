@@ -23,19 +23,23 @@ func ProxyBufferSizes(ctx configs.Context, opts configs.Options) {
 
 	// Default: warn + ignore
 	if !opts.ProxyBufferHeuristic {
-		ctx.Result.Warnings = append(ctx.Result.Warnings,
-			"proxy-buffer-size has no equivalent in Traefik and was ignored\n   "+
-				"Traefik does not expose upstream buffer sizing, it does not buffer responses the same way and uses Go’s HTTP stack",
-		)
+		warningMessage := "proxy-buffer-size has no equivalent in Traefik and was ignored\n  " +
+			"Traefik does not expose upstream buffer sizing, it does not buffer responses the same way and uses Go’s HTTP stack"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
+
+		ctx.ReportWarning(string(models.ProxyBufferSize), warningMessage)
 
 		return
 	}
 
 	size, err := parseSizeBytes(val)
 	if err != nil {
-		ctx.Result.Warnings = append(ctx.Result.Warnings,
-			"proxy-buffer-size value could not be parsed and was ignored",
-		)
+		warningMessage := "proxy-buffer-size value could not be parsed and was ignored"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
+
+		ctx.ReportWarning(string(models.ProxyBufferSize), warningMessage)
 
 		return
 	}
@@ -59,8 +63,10 @@ func ProxyBufferSizes(ctx configs.Context, opts configs.Options) {
 
 	ctx.Result.Middlewares = append(ctx.Result.Middlewares, middleware)
 
-	ctx.Result.Warnings = append(ctx.Result.Warnings,
-		"proxy-buffer-size was heuristically mapped to Traefik buffering; this is NOT equivalent to NGINX behavior",
-		"Traefik buffering affects response bodies, not headers; verify application behavior",
-	)
+	warningMessage := "proxy-buffer-size was heuristically mapped to Traefik buffering; this is NOT equivalent to NGINX behavior" +
+		" Traefik buffering affects response bodies, not headers; verify application behavior"
+
+	ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
+
+	ctx.ReportWarning(string(models.ProxyBufferSize), warningMessage)
 }

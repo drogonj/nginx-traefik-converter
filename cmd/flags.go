@@ -5,6 +5,7 @@ import (
 
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/kubernetes"
+	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/render"
 	"github.com/spf13/cobra"
 )
 
@@ -18,10 +19,11 @@ type Config struct {
 }
 
 var (
-	cliCfg     = new(Config)
-	opts       = configs.NewOptions()
-	logger     *slog.Logger
-	kubeConfig = kubernetes.New()
+	cliCfg        = new(Config)
+	opts          = configs.NewOptions()
+	logger        *slog.Logger
+	kubeConfig    = kubernetes.New()
+	printerConfig = render.New()
 )
 
 // Registers all global flags to utility.
@@ -47,4 +49,6 @@ func registerCommonFlags(cmd *cobra.Command) {
 func registerImportFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&cliCfg.ToFile, "to-file", "", "",
 		"name of the file to which the final imported yaml should be written to")
+	cmd.PersistentFlags().BoolVarP(&printerConfig.Table, "table", "", false,
+		"when enabled prints output in table format")
 }

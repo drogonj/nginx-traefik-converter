@@ -10,14 +10,14 @@ import (
 // Run processes ingress annotations using the available converters.
 // It is the core function responsible for converting NGINX Ingress
 // annotations into their Traefik equivalents.
-// Supported Annotations:
-//
-//	-
 func Run(ctx configs.Context, opts configs.Options) error {
 	middleware.RewriteTargets(ctx)
 	middleware.SSLRedirect(ctx)
 	middleware.BasicAuth(ctx)
-	middleware.RateLimit(ctx)
+
+	if err := middleware.RateLimit(ctx); err != nil {
+		return err
+	}
 
 	if err := middleware.CORS(ctx); err != nil {
 		return err
@@ -45,7 +45,7 @@ func Run(ctx configs.Context, opts configs.Options) error {
 	middleware.ExtraAnnotations(ctx)
 	tls.HandleAuthTLSVerifyClient(ctx)
 
-	//middleware.Warnings(ctx)
+	// middleware.Warnings(ctx)
 
 	return nil
 }

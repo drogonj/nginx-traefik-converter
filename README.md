@@ -14,7 +14,7 @@ Rather than attempting a naive 1:1 translation of annotations, the tool understa
 
 Annotations that cannot be safely expressed in Traefik are detected, warned about, and intentionally skipped to avoid silent behavior changes.
 
-The goal of the CLI is to make migrations predictable and reviewable, not to hide complexity. Operators always know what was converted, what was not, and why.
+The goal of the CLI is to make migrations predictable and reviewable, not to hide complexity. CLI always know what was converted, what was not, and why.
 
 ---
 

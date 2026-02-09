@@ -18,8 +18,11 @@ import (
 //   - "nginx.ingress.kubernetes.io/proxy-redirect-from"
 //   - "nginx.ingress.kubernetes.io/proxy-redirect-to"
 func ProxyRedirect(ctx configs.Context) error {
-	redirectFrom, hasFrom := ctx.Annotations[string(models.ProxyRedirectFrom)]
-	redirectTo, hasTo := ctx.Annotations[string(models.ProxyRedirectTo)]
+	annRedirectFrom := string(models.ProxyRedirectFrom)
+	annRedirectTo := string(models.ProxyRedirectTo)
+
+	redirectFrom, hasFrom := ctx.Annotations[annRedirectFrom]
+	redirectTo, hasTo := ctx.Annotations[annRedirectTo]
 
 	if !hasFrom && !hasTo {
 		return nil
@@ -55,6 +58,10 @@ func ProxyRedirect(ctx configs.Context) error {
 			},
 		},
 	})
+
+	ctx.ReportConverted(annRedirectFrom)
+
+	ctx.ReportConverted(annRedirectTo)
 
 	return nil
 }

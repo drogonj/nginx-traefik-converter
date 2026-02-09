@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"fmt"
+
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/configs"
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/converters/models"
 	"github.com/traefik/traefik/v3/pkg/config/dynamic"
@@ -17,10 +19,17 @@ import (
 func SSLRedirect(ctx configs.Context) {
 	ctx.Log.Debug("running converter SSLRedirect")
 
-	ssl := ctx.Annotations[string(models.SslRedirect)]
-	force := ctx.Annotations[string(models.ForceSslRedirect)]
+	annSSLRedirect := string(models.SSLRedirect)
+	annForceSslRedirect := string(models.ForceSSLRedirect)
+
+	ssl := ctx.Annotations[annSSLRedirect]
+	force := ctx.Annotations[annForceSslRedirect]
 
 	if ssl != "true" && force != "true" {
+		ctx.ReportSkipped(annSSLRedirect, fmt.Sprintf("%s is not set to true", annSSLRedirect))
+
+		ctx.ReportSkipped(annForceSslRedirect, fmt.Sprintf("%s is not set to true", annForceSslRedirect))
+
 		return
 	}
 
@@ -40,4 +49,8 @@ func SSLRedirect(ctx configs.Context) {
 			},
 		},
 	})
+
+	ctx.ReportConverted(annSSLRedirect)
+
+	ctx.ReportConverted(annForceSslRedirect)
 }

@@ -19,43 +19,56 @@ func ExtraAnnotations(ctx configs.Context) {
 	ctx.Log.Debug("running converter ExtraAnnotations")
 
 	if ctx.Annotations[string(models.ProxyBuffering)] == "off" {
-		ctx.Result.Warnings = append(ctx.Result.Warnings,
-			"proxy-buffering=off is default behavior in Traefik",
-		)
+		warningMessage := "proxy-buffering=off is default behavior in Traefik"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
+
+		ctx.ReportWarning(string(models.CorsAllowMethods), warningMessage)
 	}
 
 	if ctx.Annotations[string(models.ServiceUpstream)] == "true" {
-		ctx.Result.Warnings = append(ctx.Result.Warnings,
-			"service-upstream=true is default behavior in Traefik",
-		)
+		warningMessage := "service-upstream=true is default behavior in Traefik"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
+
+		ctx.ReportWarning(string(models.ServiceUpstream), warningMessage)
 	}
 
 	if ctx.Annotations[string(models.EnableOpentracing)] == "true" {
-		ctx.Result.Warnings = append(
-			ctx.Result.Warnings,
-			"enable-opentracing is global in Traefik and cannot be enabled per Ingress",
-		)
+		warningMessage := "enable-opentracing is global in Traefik and cannot be enabled per Ingress"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
+
+		ctx.ReportWarning(string(models.EnableOpentracing), warningMessage)
 	}
 
 	if ctx.Annotations[string(models.EnableOpentelemetry)] == "true" {
+		warningMessage := "enable-opentelemetry must be configured globally in Traefik static config"
+
 		ctx.Result.Warnings = append(
 			ctx.Result.Warnings,
-			"enable-opentelemetry must be configured globally in Traefik static config"+`tracing:
+			warningMessage+`tracing:
   otlp:
     grpc:
       endpoint: otel-collector:4317`,
 		)
+
+		ctx.ReportWarning(string(models.EnableOpentelemetry), warningMessage)
 	}
 
 	if v := ctx.Annotations[string(models.BackendProtocol)]; v != "" {
-		ctx.Result.Warnings = append(ctx.Result.Warnings,
-			"backend-protocol must be applied to IngressRoute service scheme, check for generated ingressroutes.yaml",
-		)
+		warningMessage := "backend-protocol must be applied to IngressRoute service scheme, check for generated ingressroutes.yaml"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
+
+		ctx.ReportWarning(string(models.BackendProtocol), warningMessage)
 	}
 
 	if ctx.Annotations[string(models.GrpcBackend)] == "true" {
-		ctx.Result.Warnings = append(ctx.Result.Warnings,
-			"grpc-backend requires IngressRoute service scheme h2c or https+h2, check for generated ingressroutes.yaml",
-		)
+		warningMessage := "grpc-backend requires IngressRoute service scheme h2c or https+h2, check for generated ingressroutes.yaml"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
+
+		ctx.ReportWarning(string(models.GrpcBackend), warningMessage)
 	}
 }

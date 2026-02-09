@@ -24,6 +24,8 @@ func CORS(ctx configs.Context) error {
 	ctx.Log.Debug("running converter CORS")
 
 	if ctx.Annotations[string(models.EnableCORS)] != "true" {
+		ctx.ReportIgnored(string(models.EnableCORS), "enable-cors was not set to true")
+
 		return nil
 	}
 
@@ -31,31 +33,45 @@ func CORS(ctx configs.Context) error {
 
 	if v := ctx.Annotations[string(models.CorsAllowOrigin)]; v != "" {
 		headers.AccessControlAllowOriginList = headersNeat(v)
+
+		ctx.ReportConverted(string(models.CorsAllowOrigin))
 	}
 
 	if v := ctx.Annotations[string(models.CorsAllowMethods)]; v != "" {
 		headers.AccessControlAllowMethods = headersNeat(v)
+
+		ctx.ReportConverted(string(models.CorsAllowMethods))
 	}
 
 	if v := ctx.Annotations[string(models.CorsAllowHeaders)]; v != "" {
 		headers.AccessControlAllowHeaders = headersNeat(v)
+
+		ctx.ReportConverted(string(models.CorsAllowMethods))
 	}
 
 	if v := ctx.Annotations[string(models.CorsAllowCredentials)]; v == "true" {
 		headers.AccessControlAllowCredentials = true
+
+		ctx.ReportConverted(string(models.CorsAllowMethods))
 	}
 
 	if v := ctx.Annotations[string(models.CorsMaxAge)]; v != "" {
 		secs, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
+			ctx.ReportWarning(string(models.CorsMaxAge), err.Error())
+
 			return err
 		}
 
 		headers.AccessControlMaxAge = secs
+
+		ctx.ReportConverted(string(models.CorsMaxAge))
 	}
 
 	if v := ctx.Annotations[string(models.CorsExposeHeaders)]; v != "" {
 		headers.AccessControlExposeHeaders = headersNeat(v)
+
+		ctx.ReportConverted(string(models.CorsExposeHeaders))
 	}
 
 	ctx.Result.Middlewares = append(ctx.Result.Middlewares,
