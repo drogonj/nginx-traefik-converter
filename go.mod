@@ -3,6 +3,7 @@ module github.com/nikhilsbhat/ingress-traefik-converter
 go 1.25.1
 
 require (
+	github.com/fatih/color v1.18.0
 	github.com/jamesmcroft/traefik-plugin-rewrite-response-headers v1.1.2
 	github.com/olekukonko/tablewriter v1.1.3
 	github.com/spf13/cobra v1.9.1
@@ -26,7 +27,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-acme/lego/v4 v4.31.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect

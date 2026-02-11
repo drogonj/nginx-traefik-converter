@@ -18,11 +18,28 @@ import (
 func ExtraAnnotations(ctx configs.Context) {
 	ctx.Log.Debug("running converter ExtraAnnotations")
 
+	if _, ok := ctx.Annotations[string(models.ClientHeaderBufferSize)]; ok {
+		msg := `'client-header-buffer-size' is not supported per-Ingress in Traefik;
+configure it globally using:
+entryPoints.<name>.http.maxHeaderBytes in Traefik static configuration`
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+		ctx.ReportIgnored(string(models.ClientHeaderBufferSize), msg)
+	}
+
+	if _, ok := ctx.Annotations[string(models.LargeClientHeaderBuffers)]; ok {
+		msg := `'large-client-header-buffers' is not supported per-Ingress in Traefik;
+Traefik only supports a global limit
+via entryPoints.<name>.http.maxHeaderBytes in static configuration`
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+		ctx.ReportIgnored(string(models.LargeClientHeaderBuffers), msg)
+	}
+
 	if ctx.Annotations[string(models.ServiceUpstream)] == "true" {
 		warningMessage := "service-upstream=true is default behavior in Traefik"
 
 		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
-
 		ctx.ReportIgnored(string(models.ServiceUpstream), warningMessage)
 	}
 
@@ -30,7 +47,6 @@ func ExtraAnnotations(ctx configs.Context) {
 		warningMessage := "enable-opentracing is global in Traefik and cannot be enabled per Ingress"
 
 		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
-
 		ctx.ReportWarning(string(models.EnableOpentracing), warningMessage)
 	}
 
@@ -52,7 +68,6 @@ func ExtraAnnotations(ctx configs.Context) {
 		warningMessage := "backend-protocol must be applied to IngressRoute service scheme, check for generated ingressroutes.yaml"
 
 		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
-
 		ctx.ReportWarning(string(models.BackendProtocol), warningMessage)
 	}
 
@@ -60,7 +75,6 @@ func ExtraAnnotations(ctx configs.Context) {
 		warningMessage := "grpc-backend requires IngressRoute service scheme h2c or https+h2, check for generated ingressroutes.yaml"
 
 		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
-
 		ctx.ReportWarning(string(models.GrpcBackend), warningMessage)
 	}
 }

@@ -23,8 +23,9 @@ func ProxyBufferSizes(ctx configs.Context, opts configs.Options) {
 
 	// Default: warn + ignore
 	if !opts.ProxyBufferHeuristic {
-		warningMessage := "proxy-buffer-size has no equivalent in Traefik and was ignored\n  " +
-			"Traefik does not expose upstream buffer sizing, it does not buffer responses the same way and uses Go’s HTTP stack"
+		warningMessage := `proxy-buffer-size has no equivalent in Traefik and was ignored
+Traefik does not expose upstream buffer sizing,
+it does not buffer responses the same way and uses Go’s HTTP stack`
 
 		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
 
