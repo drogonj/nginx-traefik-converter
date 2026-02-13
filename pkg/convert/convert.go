@@ -10,20 +10,26 @@ import (
 // Run processes ingress annotations using the available converters.
 // It is the core function responsible for converting NGINX Ingress
 // annotations into their Traefik equivalents.
-func Run(ctx configs.Context, opts configs.Options) error {
-	middleware.RewriteTargets(ctx)
-	middleware.SSLRedirect(ctx)
-	middleware.BasicAuth(ctx)
-
-	if err := middleware.RateLimit(ctx); err != nil {
-		return err
-	}
-
+func Run(ctx configs.Context) error {
 	if err := middleware.CORS(ctx); err != nil {
 		return err
 	}
 
+	if err := middleware.ProxyCookiePath(ctx); err != nil {
+		return err
+	}
+
+	middleware.UpstreamVHost(ctx)
+	middleware.BasicAuth(ctx)
+
 	if err := middleware.BodySize(ctx); err != nil {
+		return err
+	}
+
+	middleware.RewriteTargets(ctx)
+	middleware.SSLRedirect(ctx)
+
+	if err := middleware.RateLimit(ctx); err != nil {
 		return err
 	}
 
@@ -31,18 +37,18 @@ func Run(ctx configs.Context, opts configs.Options) error {
 		return err
 	}
 
-	middleware.ConfigurationSnippets(ctx)
+	if err := middleware.ConfigurationSnippets(ctx); err != nil {
+		return err
+	}
+
 	middleware.ProxyBufferSizes(ctx) // 👈 heuristic-aware
-	middleware.UpstreamVHost(ctx)
 	middleware.ServerSnippet(ctx)
 	middleware.EnableUnderscoresInHeaders(ctx)
 	middleware.ExtraAnnotations(ctx)
 	middleware.ProxyBuffering(ctx)
 	middleware.HandleAuthURL(ctx)
 
-	if err := middleware.ProxyCookiePath(ctx); err != nil {
-		return err
-	}
+	sortMiddlewares(ctx.Result.Middlewares)
 
 	if ingressroute.NeedsIngressRoute(ctx.Annotations) {
 		if err := ingressroute.BuildIngressRoute(ctx); err != nil {

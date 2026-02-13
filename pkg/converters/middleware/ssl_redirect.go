@@ -22,8 +22,13 @@ func SSLRedirect(ctx configs.Context) {
 	annSSLRedirect := string(models.SSLRedirect)
 	annForceSslRedirect := string(models.ForceSSLRedirect)
 
-	ssl := ctx.Annotations[annSSLRedirect]
-	force := ctx.Annotations[annForceSslRedirect]
+	ssl, annSSLRedirectOk := ctx.Annotations[annSSLRedirect]
+
+	force, annForceSslRedirectOk := ctx.Annotations[annForceSslRedirect]
+
+	if !annSSLRedirectOk && !annForceSslRedirectOk {
+		return
+	}
 
 	if ssl != "true" && force != "true" {
 		ctx.ReportSkipped(annSSLRedirect, fmt.Sprintf("%s is not set to true", annSSLRedirect))

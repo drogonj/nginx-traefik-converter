@@ -61,7 +61,7 @@ func getConvertCommand() *cobra.Command {
 				ctx := configs.New(&ingress, res, opts, logger)
 				ctx.StartIngressReport(ingress.Namespace, ingress.Name)
 
-				if err = convert.Run(*ctx, *opts); err != nil {
+				if err = convert.Run(*ctx); err != nil {
 					logger.Error("converting ingress to traefik errored",
 						slog.Any("ingress", ingress.Name),
 						slog.Any("error:", err.Error()))

@@ -130,12 +130,45 @@ func BuildIngressRoute(ctx configs.Context) error {
 }
 
 func middlewareRefs(ctx configs.Context) []traefik.MiddlewareRef {
-	refs := make([]traefik.MiddlewareRef, 0)
+	return orderMiddlewares(ctx.Result.Middlewares)
+}
 
-	for _, mw := range ctx.Result.Middlewares {
-		refs = append(refs, traefik.MiddlewareRef{
-			Name: mw.GetName(),
-		})
+//nolint:varnamelen
+func orderMiddlewares(mws []*traefik.Middleware) []traefik.MiddlewareRef {
+	var (
+		conditional *traefik.Middleware
+		cors        *traefik.Middleware
+		rest        []*traefik.Middleware
+	)
+
+	for _, mw := range mws {
+		name := mw.GetName()
+
+		switch {
+		case strings.Contains(name, "conditional-return"):
+			conditional = mw
+
+		case strings.Contains(name, "cors") || strings.Contains(name, "headers"):
+			// your CORS/snippet headers middleware
+			cors = mw
+
+		default:
+			rest = append(rest, mw)
+		}
+	}
+
+	refs := make([]traefik.MiddlewareRef, 0, len(mws))
+
+	if conditional != nil {
+		refs = append(refs, traefik.MiddlewareRef{Name: conditional.GetName()})
+	}
+
+	if cors != nil {
+		refs = append(refs, traefik.MiddlewareRef{Name: cors.GetName()})
+	}
+
+	for _, mw := range rest {
+		refs = append(refs, traefik.MiddlewareRef{Name: mw.GetName()})
 	}
 
 	return refs

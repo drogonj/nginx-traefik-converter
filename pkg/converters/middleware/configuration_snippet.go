@@ -1,6 +1,8 @@
+//nolint:mnd
 package middleware
 
 import (
+	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,6 +12,7 @@ import (
 	"github.com/nikhilsbhat/ingress-traefik-converter/pkg/errors"
 	"github.com/traefik/traefik/v3/pkg/config/dynamic"
 	traefik "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,6 +29,12 @@ type corsConfig struct {
 	AllowMethods []string
 	AllowCreds   *bool
 	MaxAge       int64
+}
+
+type conditionalReturnConfig struct {
+	Method     string
+	StatusCode int
+	Headers    map[string]any
 }
 
 var unsupported = map[string]unsupportedDirective{
@@ -52,19 +61,19 @@ var unsupported = map[string]unsupportedDirective{
 // ConfigurationSnippets handles the below annotations.
 // Annotations:
 //   - "nginx.ingress.kubernetes.io/configuration-snippet"
-func ConfigurationSnippets(ctx configs.Context) {
+func ConfigurationSnippets(ctx configs.Context) error {
 	ctx.Log.Debug("running converter ConfigurationSnippet")
 
 	ann := string(models.ConfigurationSnippet)
 
 	snippet, ok := ctx.Annotations[ann]
 	if !ok {
-		return
+		return nil
 	}
 
 	lines := splitLines(snippet)
 	if len(lines) == 0 {
-		return
+		return nil
 	}
 
 	// 🔒 Conditional CORS handling
@@ -75,17 +84,25 @@ func ConfigurationSnippets(ctx configs.Context) {
 				"failed to parse conditional CORS snippet; skipped",
 			)
 
-			return
+			return err
 		}
 
 		emitCORSMiddleware(ctx, cfg)
 
-		return
+		if cr := parseConditionalReturn(lines); cr != nil {
+			if err = emitConditionalReturnPlugin(ctx, cr); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
 
 	convertGenericSnippet(ctx, lines)
 
 	ctx.ReportConverted(ann)
+
+	return nil
 }
 
 /* ---------------- Generic snippet handling ---------------- */
@@ -151,7 +168,7 @@ func convertGenericSnippet(ctx configs.Context, lines []string) {
 
 	ctx.Result.Middlewares = append(
 		ctx.Result.Middlewares,
-		newHeadersMiddleware(ctx, "snippet-headers", &dynamic.Headers{
+		newHeadersMiddleware(ctx, "configuration-snippet", &dynamic.Headers{
 			CustomRequestHeaders:  reqHeaders,
 			CustomResponseHeaders: respHeaders,
 		}),
@@ -260,6 +277,196 @@ func emitCORSMiddleware(ctx configs.Context, cfg *corsConfig) {
 	ctx.Result.Warnings = append(ctx.Result.Warnings,
 		"conditional NGINX CORS logic was converted to Traefik CORS middleware",
 	)
+}
+
+func parseConditionalReturn(lines []string) *conditionalReturnConfig {
+	var (
+		inIf   bool
+		method string
+		status int
+	)
+
+	headers := make(map[string]any)
+
+	for _, raw := range lines {
+		line := strings.TrimSpace(raw)
+		lower := strings.ToLower(line)
+
+		// Detect: if ($request_method = 'OPTIONS') {
+		if strings.HasPrefix(lower, "if") && strings.Contains(lower, "$request_method") {
+			if strings.Contains(lower, "options") {
+				method = "OPTIONS"
+				inIf = true
+
+				continue
+			}
+		}
+
+		if inIf {
+			// Detect return 204;
+			if strings.HasPrefix(lower, "return") {
+				fields := strings.Fields(lower)
+				if len(fields) >= 2 {
+					if code, err := strconv.Atoi(strings.TrimSuffix(fields[1], ";")); err == nil {
+						status = code
+					}
+				}
+
+				continue
+			}
+
+			//nolint:varnamelen
+			// Parse headers properly
+			if k, v, ok := parseAddHeaderNormalized(line); ok {
+				// Special-case list headers
+				switch strings.ToLower(k) {
+				case "access-control-allow-headers", "access-control-allow-methods":
+					list := splitCSV(v)
+					if len(list) > 0 {
+						headers[k] = list
+					} else {
+						headers[k] = v
+					}
+				default:
+					headers[k] = v
+				}
+
+				continue
+			}
+
+			// End of block
+			if strings.HasPrefix(line, "}") {
+				inIf = false
+			}
+		}
+	}
+
+	if method != "" && status > 0 {
+		return &conditionalReturnConfig{
+			Method:     method,
+			StatusCode: status,
+			Headers:    headers,
+		}
+	}
+
+	return nil
+}
+
+func emitConditionalReturnPlugin(ctx configs.Context, cfg *conditionalReturnConfig) error {
+	pluginCfg := map[string]any{
+		"rules": []map[string]any{
+			{
+				"method":     cfg.Method,
+				"statusCode": cfg.StatusCode,
+				"headers":    cfg.Headers,
+			},
+		},
+	}
+
+	raw, err := json.Marshal(pluginCfg)
+	if err != nil {
+		return err
+	}
+
+	ctx.Result.Middlewares = append(ctx.Result.Middlewares, &traefik.Middleware{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: traefik.SchemeGroupVersion.String(),
+			Kind:       "Middleware",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mwName(ctx, "conditional-return"),
+			Namespace: ctx.Namespace,
+		},
+		Spec: traefik.MiddlewareSpec{
+			Plugin: map[string]apiextv1.JSON{
+				"conditionalReturn": {Raw: raw},
+			},
+		},
+	})
+
+	return nil
+}
+
+func parseAddHeaderNormalized(line string) (string, string, bool) {
+	// Trim trailing ;
+	line = strings.TrimSpace(strings.TrimSuffix(line, ";"))
+
+	lower := strings.ToLower(line)
+	if !strings.HasPrefix(lower, "add_header") && !strings.HasPrefix(lower, "more_set_headers") {
+		return "", "", false
+	}
+
+	// Remove directive name
+	fields := strings.Fields(line)
+	if len(fields) < 3 {
+		return "", "", false
+	}
+
+	rest := strings.TrimSpace(line[len(fields[0]):])
+
+	// Remove "always" if present
+	rest = strings.TrimSpace(strings.TrimSuffix(rest, "always"))
+
+	// Now rest should look like:
+	// "Header-Name" "Header Value"
+	// 'Header-Name' 600
+	// Header-Name value
+
+	var key, val string
+
+	// Try quoted key
+	if strings.HasPrefix(rest, `"`) || strings.HasPrefix(rest, `'`) {
+		quote := rest[0:1]
+
+		end := strings.Index(rest[1:], quote)
+		if end == -1 {
+			return "", "", false
+		}
+
+		end++
+
+		key = rest[1:end]
+		after := strings.TrimSpace(rest[end+1:])
+
+		// Value may be quoted or unquoted
+		if strings.HasPrefix(after, `"`) || strings.HasPrefix(after, `'`) {
+			q := after[0:1]
+
+			e := strings.Index(after[1:], q)
+			if e == -1 {
+				return "", "", false
+			}
+
+			val = after[1 : 1+e]
+		} else {
+			// Unquoted value (e.g. 600)
+			val = strings.TrimSpace(after)
+		}
+	} else {
+		// No quoted key, fallback to fields
+		parts := strings.Fields(rest)
+		if len(parts) < 2 {
+			return "", "", false
+		}
+
+		key = strings.Trim(parts[0], `"'`)
+		val = strings.Trim(strings.Join(parts[1:], " "), `"'`)
+	}
+
+	key = strings.TrimSpace(key)
+	val = strings.TrimSpace(val)
+
+	if key == "" || val == "" {
+		return "", "", false
+	}
+
+	// Handle $http_origin (cannot be evaluated by Traefik)
+	if strings.Contains(val, "$http_origin") {
+		// Best-effort: let CORS middleware handle dynamic origin
+		val = "*"
+	}
+
+	return key, val, true
 }
 
 /* ---------------- Helpers ---------------- */

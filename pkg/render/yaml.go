@@ -21,21 +21,22 @@ func WriteYAML(res configs.Result, outDir string) error {
 
 	if err := writeObjects(
 		filepath.Join(outDir, "middlewares.yaml"),
-		res.Middlewares,
+		toClientObjects(res.Middlewares),
 	); err != nil {
 		return err
 	}
 
 	if err := writeObjects(
 		filepath.Join(outDir, "ingressroutes.yaml"),
-		res.IngressRoutes,
+		toClientObjects(res.IngressRoutes),
 	); err != nil {
 		return err
 	}
 
 	if err := writeObjects(
 		filepath.Join(outDir, "tlsoptions.yaml"),
-		res.TLSOptions); err != nil {
+		toClientObjects(res.TLSOptions),
+	); err != nil {
 		return err
 	}
 
@@ -49,6 +50,15 @@ func WriteYAML(res configs.Result, outDir string) error {
 	}
 
 	return nil
+}
+
+func toClientObjects[T client.Object](in []T) []client.Object {
+	out := make([]client.Object, 0, len(in))
+	for _, o := range in {
+		out = append(out, o)
+	}
+
+	return out
 }
 
 func writeObjects(path string, objs []client.Object) error {
