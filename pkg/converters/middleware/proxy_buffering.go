@@ -6,8 +6,17 @@ import (
 
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/configs"
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/converters/models"
+	"github.com/traefik/traefik/v3/pkg/config/dynamic"
+	traefik "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ProxyBuffering handles the below annotations.
+// Annotations:
+//   - "nginx.ingress.kubernetes.io/proxy-buffering"
+//
+// When set to "on", NGINX buffers responses from the proxied server.
+// Traefik's Buffering middleware provides equivalent functionality.
 func ProxyBuffering(ctx configs.Context) {
 	ctx.Log.Debug("running converter ProxyBuffering")
 
@@ -22,23 +31,28 @@ func ProxyBuffering(ctx configs.Context) {
 
 	switch v {
 	case "on":
-		warningMessage := "nginx.ingress.kubernetes.io/proxy-buffering is not supported in Traefik and was ignored"
+		ctx.Result.Middlewares = append(ctx.Result.Middlewares, &traefik.Middleware{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: traefik.SchemeGroupVersion.String(),
+				Kind:       "Middleware",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      mwName(ctx, "buffering"),
+				Namespace: ctx.Namespace,
+			},
+			Spec: traefik.MiddlewareSpec{
+				Buffering: &dynamic.Buffering{},
+			},
+		})
 
-		ctx.Result.Warnings = append(
-			ctx.Result.Warnings,
-			"nginx.ingress.kubernetes.io/proxy-buffering is not supported in Traefik and was ignored",
-		)
+		ctx.ReportConverted(ann)
 
-		ctx.ReportIgnored(ann, warningMessage)
 	case "off":
-		warningMessage := "proxy-buffering=off is default behavior in Traefik"
+		ctx.ReportIgnored(ann, "proxy-buffering=off is default behavior in Traefik")
 
-		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
-
-		ctx.ReportIgnored(ann, warningMessage)
 	default:
 		warningMessage := fmt.Sprintf(
-			"nginx.ingress.kubernetes.io/proxy-buffering has unknown value %q and was ignored", val)
+			"proxy-buffering has unknown value %q and was ignored", val)
 
 		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
 

@@ -45,7 +45,7 @@ func BasicAuth(ctx configs.Context) {
 		},
 	})
 
+	ctx.ReportConverted(string(models.AuthType))
 	ctx.ReportConverted(string(models.AuthSecret))
-
 	ctx.ReportConverted(string(models.AuthRealm))
 }

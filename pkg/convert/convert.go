@@ -33,6 +33,10 @@ func Run(ctx configs.Context) error {
 		return err
 	}
 
+	if err := middleware.LimitConnections(ctx); err != nil {
+		return err
+	}
+
 	if err := middleware.ProxyRedirect(ctx); err != nil {
 		return err
 	}
@@ -47,11 +51,12 @@ func Run(ctx configs.Context) error {
 	middleware.ExtraAnnotations(ctx)
 	middleware.ProxyBuffering(ctx)
 	middleware.HandleAuthURL(ctx)
+	middleware.ProxyTimeouts(ctx)
 
 	sortMiddlewares(ctx.Result.Middlewares)
 
-		if err := ingressroute.BuildIngressRoute(ctx); err != nil {
-			ctx.Result.Warnings = append(ctx.Result.Warnings, err.Error())
+	if err := ingressroute.BuildIngressRoute(ctx); err != nil {
+		ctx.Result.Warnings = append(ctx.Result.Warnings, err.Error())
 	}
 
 	tls.HandleAuthTLSVerifyClient(ctx)
