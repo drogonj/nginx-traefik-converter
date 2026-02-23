@@ -50,10 +50,8 @@ func Run(ctx configs.Context) error {
 
 	sortMiddlewares(ctx.Result.Middlewares)
 
-	if ingressroute.NeedsIngressRoute(ctx.Annotations) {
 		if err := ingressroute.BuildIngressRoute(ctx); err != nil {
 			ctx.Result.Warnings = append(ctx.Result.Warnings, err.Error())
-		}
 	}
 
 	tls.HandleAuthTLSVerifyClient(ctx)
