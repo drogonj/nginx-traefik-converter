@@ -15,6 +15,8 @@ import (
 // Annotations:
 //   - "nginx.ingress.kubernetes.io/auth-url"
 func HandleAuthURL(ctx configs.Context) {
+	ctx.Log.Debug("running converter HandleAuthURL")
+
 	const ann = string(models.AuthURL)
 
 	val, ok := ctx.Annotations[ann]

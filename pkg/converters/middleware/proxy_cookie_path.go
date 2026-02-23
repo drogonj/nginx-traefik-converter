@@ -20,6 +20,8 @@ import (
 // Annotations:
 //   - "nginx.ingress.kubernetes.io/proxy-cookie-path"
 func ProxyCookiePath(ctx configs.Context) error {
+	ctx.Log.Debug("running converter ProxyCookiePath")
+
 	const ann = string(models.ProxyCookiePath)
 
 	val, ok := ctx.Annotations[ann] //nolint:varnamelen

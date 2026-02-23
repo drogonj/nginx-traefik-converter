@@ -63,16 +63,16 @@ func getConvertCommand() *cobra.Command {
 
 				if err = convert.Run(*ctx); err != nil {
 					logger.Error("converting ingress to traefik errored",
-						slog.Any("ingress", ingress.Name),
-						slog.Any("error:", err.Error()))
+						slog.String("ingress", ingress.Name),
+						slog.String("error", err.Error()))
 
 					continue
 				}
 
 				if err = render.WriteYAML(*res, filepath.Join("./out", ingress.Name)); err != nil {
 					logger.Error("writing converted traefik ingress errored",
-						slog.Any("ingress", ingress.Name),
-						slog.Any("error:", err.Error()))
+						slog.String("ingress", ingress.Name),
+						slog.String("error", err.Error()))
 
 					return err
 				}
@@ -137,7 +137,7 @@ func versionConfig(_ *cobra.Command, _ []string) error {
 	}
 
 	versionWriter := bufio.NewWriter(os.Stdout)
-	versionInfo := fmt.Sprintf("%s \n", strings.Join([]string{"yamll version", string(buildInfo)}, ": "))
+	versionInfo := fmt.Sprintf("%s \n", strings.Join([]string{"nginx-traefik-converter version", string(buildInfo)}, ": "))
 
 	if _, err = versionWriter.WriteString(versionInfo); err != nil {
 		logger.Error(err.Error())

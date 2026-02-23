@@ -12,6 +12,8 @@ import (
 //   - "nginx.ingress.kubernetes.io/proxy-redirect-from"
 //   - "nginx.ingress.kubernetes.io/proxy-redirect-to"
 func ProxyRedirect(ctx configs.Context) error {
+	ctx.Log.Debug("running converter ProxyRedirect")
+
 	annRedirectFrom := string(models.ProxyRedirectFrom)
 	annRedirectTo := string(models.ProxyRedirectTo)
 

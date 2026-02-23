@@ -10,6 +10,8 @@ import (
 //   - "nginx.ingress.kubernetes.io/auth-tls-verify-client"
 //   - "nginx.ingress.kubernetes.io/auth-tls-secret"
 func HandleAuthTLSVerifyClient(ctx configs.Context) {
+	ctx.Log.Debug("running converter HandleAuthTLSVerifyClient")
+
 	verify := ctx.Annotations[string(models.AuthTLSVerifyClient)]
 	if verify == "" || verify == "off" || verify == "false" {
 		return
