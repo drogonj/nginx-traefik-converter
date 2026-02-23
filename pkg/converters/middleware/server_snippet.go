@@ -7,12 +7,14 @@ import (
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/converters/models"
 )
 
-/* ---------------- PROXY REDIRECT ---------------- */
+/* ---------------- SERVER SNIPPET ---------------- */
 
 // ServerSnippet handles the below annotations.
 // Annotations:
 //   - "nginx.ingress.kubernetes.io/server-snippet"
 func ServerSnippet(ctx configs.Context) {
+	ctx.Log.Debug("running converter ServerSnippet")
+
 	snippet, ok := ctx.Annotations[string(models.ServerSnippet)]
 	if !ok || strings.TrimSpace(snippet) == "" {
 		return
@@ -28,7 +30,7 @@ func ServerSnippet(ctx configs.Context) {
 
 		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
 
-		ctx.ReportSkipped(ctx.Annotations[string(models.ServerSnippet)], warningMessage)
+		ctx.ReportSkipped(string(models.ServerSnippet), warningMessage)
 
 		return
 	}
@@ -88,7 +90,7 @@ func ServerSnippet(ctx configs.Context) {
 
 	ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
 
-	ctx.ReportSkipped(ctx.Annotations[string(models.ServerSnippet)], warningMessage)
+	ctx.ReportSkipped(string(models.ServerSnippet), warningMessage)
 }
 
 func isOnlyAddHeader(snippet string) bool {
