@@ -31,9 +31,35 @@ func SSLRedirect(ctx configs.Context) {
 	}
 
 	if ssl != "true" && force != "true" {
-		ctx.ReportSkipped(annSSLRedirect, fmt.Sprintf("%s is not set to true", annSSLRedirect))
+		if annSSLRedirectOk {
+			ctx.ReportSkipped(annSSLRedirect, fmt.Sprintf("%s is not set to true", annSSLRedirect))
+		}
 
-		ctx.ReportSkipped(annForceSslRedirect, fmt.Sprintf("%s is not set to true", annForceSslRedirect))
+		if annForceSslRedirectOk {
+			ctx.ReportSkipped(annForceSslRedirect, fmt.Sprintf("%s is not set to true", annForceSslRedirect))
+		}
+
+		return
+	}
+
+	// When the Ingress has spec.tls, the IngressRoute will use entryPoints=[websecure],
+	// so a redirectScheme middleware is useless (traffic is already HTTPS).
+	// The HTTP→HTTPS redirect should be handled at the Traefik entrypoint level.
+	if len(ctx.Ingress.Spec.TLS) > 0 {
+		msg := "IngressRoute already uses entryPoints=[websecure] due to spec.tls; " +
+			"configure HTTP→HTTPS redirect via Traefik static config " +
+			"(entryPoints.web.http.redirections.entryPoint.to=websecure) " +
+			"or create a separate IngressRoute on the web entryPoint with this middleware"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+
+		if annSSLRedirectOk {
+			ctx.ReportSkipped(annSSLRedirect, msg)
+		}
+
+		if annForceSslRedirectOk {
+			ctx.ReportSkipped(annForceSslRedirect, msg)
+		}
 
 		return
 	}
@@ -55,7 +81,11 @@ func SSLRedirect(ctx configs.Context) {
 		},
 	})
 
-	ctx.ReportConverted(annSSLRedirect)
+	if annSSLRedirectOk {
+		ctx.ReportConverted(annSSLRedirect)
+	}
 
-	ctx.ReportConverted(annForceSslRedirect)
+	if annForceSslRedirectOk {
+		ctx.ReportConverted(annForceSslRedirect)
+	}
 }
