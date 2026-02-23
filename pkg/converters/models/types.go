@@ -25,8 +25,12 @@ const (
 	BackendProtocol          Annotation = "nginx.ingress.kubernetes.io/backend-protocol"
 	GrpcBackend              Annotation = "nginx.ingress.kubernetes.io/grpc-backend"
 	ProxyBufferSize          Annotation = "nginx.ingress.kubernetes.io/proxy-buffer-size"
+	LimitConnections         Annotation = "nginx.ingress.kubernetes.io/limit-connections"
 	LimitRPS                 Annotation = "nginx.ingress.kubernetes.io/limit-rps"
+	LimitRPM                 Annotation = "nginx.ingress.kubernetes.io/limit-rpm"
 	LimitBurstMultiplier     Annotation = "nginx.ingress.kubernetes.io/limit-burst-multiplier"
+	ProxyReadTimeout         Annotation = "nginx.ingress.kubernetes.io/proxy-read-timeout"
+	ProxySendTimeout         Annotation = "nginx.ingress.kubernetes.io/proxy-send-timeout"
 	RewriteTarget            Annotation = "nginx.ingress.kubernetes.io/rewrite-target"
 	SSLRedirect              Annotation = "nginx.ingress.kubernetes.io/ssl-redirect"
 	ForceSSLRedirect         Annotation = "nginx.ingress.kubernetes.io/force-ssl-redirect"
@@ -64,8 +68,12 @@ var AllAnnotations = []Annotation{
 	BackendProtocol,
 	GrpcBackend,
 	ProxyBufferSize,
+	LimitConnections,
 	LimitRPS,
+	LimitRPM,
 	LimitBurstMultiplier,
+	ProxyReadTimeout,
+	ProxySendTimeout,
 	RewriteTarget,
 	SSLRedirect,
 	ForceSSLRedirect,
