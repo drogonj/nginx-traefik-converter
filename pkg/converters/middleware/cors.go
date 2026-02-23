@@ -23,11 +23,18 @@ import (
 func CORS(ctx configs.Context) error {
 	ctx.Log.Debug("running converter CORS")
 
-	if ctx.Annotations[string(models.EnableCORS)] != "true" {
+	val, ok := ctx.Annotations[string(models.EnableCORS)]
+	if !ok {
+		return nil
+	}
+
+	if val != "true" {
 		ctx.ReportIgnored(string(models.EnableCORS), "enable-cors was not set to true")
 
 		return nil
 	}
+
+	ctx.ReportConverted(string(models.EnableCORS))
 
 	headers := &dynamic.Headers{}
 
@@ -46,13 +53,13 @@ func CORS(ctx configs.Context) error {
 	if v := ctx.Annotations[string(models.CorsAllowHeaders)]; v != "" {
 		headers.AccessControlAllowHeaders = headersNeat(v)
 
-		ctx.ReportConverted(string(models.CorsAllowMethods))
+		ctx.ReportConverted(string(models.CorsAllowHeaders))
 	}
 
 	if v := ctx.Annotations[string(models.CorsAllowCredentials)]; v == "true" {
 		headers.AccessControlAllowCredentials = true
 
-		ctx.ReportConverted(string(models.CorsAllowMethods))
+		ctx.ReportConverted(string(models.CorsAllowCredentials))
 	}
 
 	if v := ctx.Annotations[string(models.CorsMaxAge)]; v != "" {
