@@ -36,3 +36,6 @@ nginx-traefik-converter_*
 !nginx-traefik-converter_*.md
 nginx-traefik-converter
 !nginx-traefik-converter/
+
+# local test ingresses
+test-ingresses
