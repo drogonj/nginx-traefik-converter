@@ -39,17 +39,20 @@ func emitTLSOption(ctx configs.Context, secretName, clientAuthType string) {
 	)
 }
 
-// ApplyTLSOption applies TLS configs to ingress routes.
-func ApplyTLSOption(ingressRoute *traefik.IngressRoute, ctx configs.Context, scheme string) {
-	if scheme != "https" {
+// ApplyTLSOption applies mTLS TLS option to ingress routes.
+// It extends an existing TLS section or creates one if needed.
+func ApplyTLSOption(ingressRoute *traefik.IngressRoute, ctx configs.Context) {
+	opt, ok := ctx.Result.TLSOptionRefs[ctx.IngressName]
+	if !ok {
 		return
 	}
 
-	if opt, ok := ctx.Result.TLSOptionRefs[ctx.IngressName]; ok {
-		ingressRoute.Spec.TLS = &traefik.TLS{
-			Options: &traefik.TLSOptionRef{
-				Name: opt,
-			},
-		}
+	// Ensure TLS section exists
+	if ingressRoute.Spec.TLS == nil {
+		ingressRoute.Spec.TLS = &traefik.TLS{}
+	}
+
+	ingressRoute.Spec.TLS.Options = &traefik.TLSOptionRef{
+		Name: opt,
 	}
 }
