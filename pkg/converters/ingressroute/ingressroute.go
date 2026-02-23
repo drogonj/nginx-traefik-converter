@@ -100,6 +100,12 @@ func BuildIngressRoute(ctx configs.Context) error {
 		return nil
 	}
 
+	// Determine entryPoints: frontend TLS (spec.tls) takes priority over backend scheme
+	entryPoints := entryPointsForScheme(scheme)
+	if len(ing.Spec.TLS) > 0 {
+		entryPoints = []string{"websecure"}
+	}
+
 	ingressRoute := &traefik.IngressRoute{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: traefik.SchemeGroupVersion.String(),
@@ -110,13 +116,16 @@ func BuildIngressRoute(ctx configs.Context) error {
 			Namespace: ing.Namespace,
 		},
 		Spec: traefik.IngressRouteSpec{
-			EntryPoints: entryPointsForScheme(scheme),
+			EntryPoints: entryPoints,
 			Routes:      routes,
 		},
 	}
 
-	// Apply TLS only if scheme requires it (as discussed earlier)
-	tls.ApplyTLSOption(ingressRoute, ctx, scheme)
+	// Apply TLS from Ingress spec.tls (standard TLS termination)
+	applyIngressTLS(ingressRoute, ing)
+
+	// Apply mTLS TLS Option if present (may extend TLS section)
+	tls.ApplyTLSOption(ingressRoute, ctx)
 
 	ctx.Result.IngressRoutes = append(ctx.Result.IngressRoutes, ingressRoute)
 
@@ -124,9 +133,26 @@ func BuildIngressRoute(ctx configs.Context) error {
 		ctx.ReportConverted(string(models.UseRegex))
 	}
 
-	ctx.ReportConverted(string(models.UseRegex))
-
 	return nil
+}
+
+func applyIngressTLS(ingressRoute *traefik.IngressRoute, ing *netv1.Ingress) {
+	if len(ing.Spec.TLS) == 0 {
+		return
+	}
+
+	if ingressRoute.Spec.TLS == nil {
+		ingressRoute.Spec.TLS = &traefik.TLS{}
+	}
+
+	// Use the first TLS entry's secretName
+	for _, t := range ing.Spec.TLS {
+		if t.SecretName != "" {
+			ingressRoute.Spec.TLS.SecretName = t.SecretName
+
+			break
+		}
+	}
 }
 
 func middlewareRefs(ctx configs.Context) []traefik.MiddlewareRef {
