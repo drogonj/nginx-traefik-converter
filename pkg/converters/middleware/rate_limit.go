@@ -42,8 +42,19 @@ func RateLimit(ctx configs.Context) error {
 		}
 	}
 
-	// In NGINX, limit-rps and limit-rpm apply simultaneously.
-	// Generate separate middlewares for each.
+	// When both limit-rps and limit-rpm are set, NGINX applies both zones
+	// but the stricter (lower) rate effectively dominates.
+	// In Traefik, each becomes a separate RateLimit middleware chained
+	// sequentially — both are enforced independently, which may produce
+	// different throttling behavior.
+	if hasRPS && hasRPM {
+		msg := "both limit-rps and limit-rpm are set; " +
+			"NGINX uses the stricter value while Traefik chains two independent RateLimit middlewares — behavior may differ"
+		ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+		ctx.ReportWarning(annLimitRPS, msg)
+		ctx.ReportWarning(annLimitRPM, msg)
+	}
+
 	if hasRPS {
 		avg, err := strconv.Atoi(rpsStr)
 		if err != nil {
