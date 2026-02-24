@@ -52,23 +52,3 @@ func RewriteTargets(ctx configs.Context) {
 
 	ctx.ReportConverted(annRewriteTarget)
 }
-
-func newRewriteMiddleware(
-	ctx configs.Context,
-	name string,
-	regex *dynamic.ReplacePathRegex,
-) *traefik.Middleware {
-	return &traefik.Middleware{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: traefik.SchemeGroupVersion.String(),
-			Kind:       "Middleware",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mwName(ctx, name),
-			Namespace: ctx.Namespace,
-		},
-		Spec: traefik.MiddlewareSpec{
-			ReplacePathRegex: regex,
-		},
-	}
-}
