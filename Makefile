@@ -38,6 +38,9 @@ local/check: local/fmt ## Loads all the dependencies to vendor directory
 local/build: local/check ## Generates the artifact with the help of 'go build'
 	@go build -o $(APP_NAME)_v$(VERSION) -ldflags="-s -w"
 
+local/staticbuild: local/check ## Generates a static artifact, deployable on any linux distribution
+	@CGO_ENABLED=0 go build -o $(APP_NAME)_v$(VERSION) -ldflags="-s -w" -a
+
 local/snapshot: local/check ## Generates the artifact with the help of 'go build'
 	GOVERSION=${GOVERSION} BUILD_ENVIRONMENT=${BUILD_ENVIRONMENT} goreleaser build --snapshot --clean
 
