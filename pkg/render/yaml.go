@@ -40,6 +40,13 @@ func WriteYAML(res configs.Result, outDir string) error {
 		return err
 	}
 
+	if err := writeObjects(
+		filepath.Join(outDir, "certificates.yaml"),
+		toClientObjects(res.Certificates),
+	); err != nil {
+		return err
+	}
+
 	if len(res.Warnings) > 0 {
 		if err := writeWarnings(
 			filepath.Join(outDir, "warnings.txt"),

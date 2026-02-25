@@ -111,7 +111,13 @@ var CertManagerAnnotations = []Annotation{
 }
 
 // AllAnnotations is the union of all annotation families recognised by the converter.
-var AllAnnotations = append(NginxAnnotations, CertManagerAnnotations...)
+var AllAnnotations = func() []Annotation {
+	all := make([]Annotation, 0, len(NginxAnnotations)+len(CertManagerAnnotations))
+	all = append(all, NginxAnnotations...)
+	all = append(all, CertManagerAnnotations...)
+
+	return all
+}()
 
 func (a Annotation) String() string {
 	return string(a)

@@ -2,6 +2,7 @@ package convert
 
 import (
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/configs"
+	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/converters/certificate"
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/converters/ingressroute"
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/converters/middleware"
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/converters/tls"
@@ -60,6 +61,9 @@ func Run(ctx configs.Context) error {
 	}
 
 	tls.HandleAuthTLSVerifyClient(ctx)
+
+	// Extract or generate cert-manager Certificate resources.
+	certificate.ExtractOrGenerate(ctx)
 
 	return nil
 }

@@ -56,9 +56,13 @@ func getConvertCommand() *cobra.Command {
 
 			var globalReport configs.GlobalReport
 
+			seenCertSecrets := make(map[string]struct{})
+
 			for _, ingress := range ingresses {
 				res := configs.NewResult()
 				ctx := configs.New(&ingress, res, opts, logger)
+				ctx.CertLookup = kubeConfig
+				ctx.SeenCertSecrets = seenCertSecrets
 				ctx.StartIngressReport(ingress.Namespace, ingress.Name)
 
 				if err = convert.Run(*ctx); err != nil {

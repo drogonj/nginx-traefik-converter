@@ -15,7 +15,7 @@ type Result struct {
 	// Certificates holds cert-manager Certificate resources extracted from
 	// the cluster or generated from Ingress annotations. Stored as
 	// Unstructured to avoid pulling in the cert-manager Go module.
-	Certificates  []*unstructured.Unstructured `yaml:"certificates,omitempty"    json:"certificates,omitempty"`
+	Certificates []*unstructured.Unstructured `yaml:"certificates,omitempty"    json:"certificates,omitempty"`
 
 	Warnings      []string      `yaml:"warnings,omitempty"        json:"warnings,omitempty"`
 	IngressReport IngressReport `yaml:"ingress_report,omitempty"  json:"ingress_report,omitempty"`

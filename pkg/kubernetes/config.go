@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -19,6 +20,16 @@ type Config struct {
 	clientSet     *kubernetes.Clientset
 	dynamicClient dynamic.Interface
 	logger        *slog.Logger
+
+	// certCache avoids redundant LIST calls when multiple TLS entries
+	// reference Certificates in the same namespace.
+	certCache map[string]*certCacheEntry
+}
+
+// certCacheEntry stores the result of a single LIST Certificates call.
+type certCacheEntry struct {
+	items []unstructured.Unstructured
+	err   error
 }
 
 // SetKubeClient sets kube client to Config with specified configurations.

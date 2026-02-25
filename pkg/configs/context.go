@@ -21,14 +21,15 @@ type CertificateLookup interface {
 
 // Context holds the necessary info required to run the converters.
 type Context struct {
-	Ingress     *netv1.Ingress    `yaml:"ingress,omitempty" json:"ingress,omitempty"`
-	IngressName string            `yaml:"ingress_name,omitempty" json:"ingress_name,omitempty"`
-	Namespace   string            `yaml:"namespace,omitempty" json:"namespace,omitempty"`
-	Annotations map[string]string `yaml:"annotations,omitempty" json:"annotations,omitempty"`
-	Result      *Result           `yaml:"result,omitempty" json:"result,omitempty"`
-	Options     *Options          `yaml:"options,omitempty" json:"options,omitempty"`
-	CertLookup  CertificateLookup `yaml:"-" json:"-"`
-	Log         *slog.Logger
+	Ingress         *netv1.Ingress      `yaml:"ingress,omitempty" json:"ingress,omitempty"`
+	IngressName     string              `yaml:"ingress_name,omitempty" json:"ingress_name,omitempty"`
+	Namespace       string              `yaml:"namespace,omitempty" json:"namespace,omitempty"`
+	Annotations     map[string]string   `yaml:"annotations,omitempty" json:"annotations,omitempty"`
+	Result          *Result             `yaml:"result,omitempty" json:"result,omitempty"`
+	Options         *Options            `yaml:"options,omitempty" json:"options,omitempty"`
+	CertLookup      CertificateLookup   `yaml:"-" json:"-"`
+	SeenCertSecrets map[string]struct{} `yaml:"-" json:"-"`
+	Log             *slog.Logger
 }
 
 // New returns a new instance of Context when invoked.

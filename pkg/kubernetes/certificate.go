@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -17,9 +18,12 @@ var certManagerGVR = schema.GroupVersionResource{
 	Resource: "certificates",
 }
 
-// FindCertificateBySecret lists Certificate resources in the given namespace
-// and returns the first one whose spec.secretName matches the provided value.
+// FindCertificateBySecret returns the first Certificate in the given namespace
+// whose spec.secretName matches the provided value.
 // Returns (nil, nil) when no matching Certificate is found.
+//
+// Results are cached per namespace so that multiple TLS entries in the same
+// namespace only trigger a single LIST call against the API server.
 //
 // This approach (LIST + filter) is used instead of GET-by-name because
 // cert-manager does not guarantee that the Certificate name matches the
@@ -30,6 +34,50 @@ func (cfg *Config) FindCertificateBySecret(namespace, secretName string) (*unstr
 		return nil, fmt.Errorf("dynamic client is not initialised; cannot look up Certificate resources")
 	}
 
+	items, err := cfg.listCertificatesCached(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	// items is nil when the CRD is absent — caller will fall back to generation.
+	if items == nil {
+		return nil, nil
+	}
+
+	for i := range items {
+		cert := &items[i]
+
+		specSecret, found, _ := unstructured.NestedString(cert.Object, "spec", "secretName")
+		if found && specSecret == secretName {
+			return cert, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// listCertificatesCached returns all Certificate items in the namespace,
+// caching the result so repeated calls for the same namespace reuse the
+// first LIST response.
+//
+// Returns (nil, nil) when the cert-manager CRD is not installed.
+func (cfg *Config) listCertificatesCached(namespace string) ([]unstructured.Unstructured, error) {
+	if cfg.certCache == nil {
+		cfg.certCache = make(map[string]*certCacheEntry)
+	}
+
+	if entry, ok := cfg.certCache[namespace]; ok {
+		return entry.items, entry.err
+	}
+
+	items, err := cfg.doListCertificates(namespace)
+	cfg.certCache[namespace] = &certCacheEntry{items: items, err: err}
+
+	return items, err
+}
+
+// doListCertificates performs the actual LIST call to the API server.
+func (cfg *Config) doListCertificates(namespace string) ([]unstructured.Unstructured, error) {
 	list, err := cfg.dynamicClient.Resource(certManagerGVR).Namespace(namespace).List(
 		context.TODO(),
 		metav1.ListOptions{},
@@ -38,7 +86,7 @@ func (cfg *Config) FindCertificateBySecret(namespace, secretName string) (*unstr
 		// The cert-manager CRD may not be installed in the cluster.
 		// Treat this gracefully: return nil so the caller can fall back
 		// to generating a Certificate from annotations.
-		if apierrors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) || apimeta.IsNoMatchError(err) {
 			if cfg.logger != nil {
 				cfg.logger.Warn("cert-manager Certificate CRD not found in cluster; skipping extraction")
 			}
@@ -49,16 +97,7 @@ func (cfg *Config) FindCertificateBySecret(namespace, secretName string) (*unstr
 		return nil, fmt.Errorf("listing cert-manager Certificates in namespace %q: %w", namespace, err)
 	}
 
-	for i := range list.Items {
-		cert := &list.Items[i]
-
-		specSecret, found, _ := unstructured.NestedString(cert.Object, "spec", "secretName")
-		if found && specSecret == secretName {
-			return cert, nil
-		}
-	}
-
-	return nil, nil
+	return list.Items, nil
 }
 
 // SanitizeCertificateForGitOps removes cluster-specific and transient fields
@@ -91,6 +130,62 @@ func SanitizeCertificateForGitOps(cert *unstructured.Unstructured) {
 		}
 	}
 
+	// Remove labels that become misleading once the Certificate is extracted
+	// from its original lifecycle (Helm release, operator, etc.) and managed
+	// declaratively in Git.
+	cleanStaleLabels(cert)
+
 	// Remove runtime status — it is not declarative.
 	unstructured.RemoveNestedField(cert.Object, "status")
+}
+
+// staleLabelsToRemove lists label keys (or prefixes ending with "/") that
+// should be stripped from extracted resources.  They either reference the
+// previous lifecycle manager or contain values that will drift over time.
+var staleLabelsToRemove = []string{
+	"helm.sh/",                     // helm.sh/chart, helm.sh/heritage, …
+	"app.kubernetes.io/managed-by", // "Helm" → no longer true
+	"app.kubernetes.io/version",    // version of the app — goes stale
+}
+
+// cleanStaleLabels removes Helm-specific and version labels that are no longer
+// accurate once the resource is detached from its original release.
+func cleanStaleLabels(obj *unstructured.Unstructured) {
+	labels := obj.GetLabels()
+	if len(labels) == 0 {
+		return
+	}
+
+	filtered := make(map[string]string, len(labels))
+
+	for k, v := range labels {
+		if isStaleLabel(k) {
+			continue
+		}
+
+		filtered[k] = v
+	}
+
+	if len(filtered) == 0 {
+		unstructured.RemoveNestedField(obj.Object, "metadata", "labels")
+	} else {
+		obj.SetLabels(filtered)
+	}
+}
+
+// isStaleLabel returns true when the key matches one of the entries in
+// staleLabelsToRemove.  Entries ending with "/" are treated as prefixes.
+func isStaleLabel(key string) bool {
+	for _, pattern := range staleLabelsToRemove {
+		if pattern[len(pattern)-1] == '/' {
+			// prefix match
+			if len(key) >= len(pattern) && key[:len(pattern)] == pattern {
+				return true
+			}
+		} else if key == pattern {
+			return true
+		}
+	}
+
+	return false
 }
