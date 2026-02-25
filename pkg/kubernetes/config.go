@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -12,11 +13,12 @@ import (
 
 // Config holds values required to initialise the kubernetes client.
 type Config struct {
-	NameSpace string `json:"name_space,omitempty" yaml:"name_space,omitempty"`
-	Context   string `json:"context,omitempty"    yaml:"context,omitempty"`
-	All       bool   `json:"all,omitempty"        yaml:"all,omitempty"`
-	clientSet *kubernetes.Clientset
-	logger    *slog.Logger
+	NameSpace     string `json:"name_space,omitempty" yaml:"name_space,omitempty"`
+	Context       string `json:"context,omitempty"    yaml:"context,omitempty"`
+	All           bool   `json:"all,omitempty"        yaml:"all,omitempty"`
+	clientSet     *kubernetes.Clientset
+	dynamicClient dynamic.Interface
+	logger        *slog.Logger
 }
 
 // SetKubeClient sets kube client to Config with specified configurations.
@@ -40,7 +42,16 @@ func (cfg *Config) SetKubeClient() error {
 		return err
 	}
 
+	dynClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		cfg.logger.Error("failed to create dynamic Kubernetes client", slog.Any("error", err))
+
+		return err
+	}
+
+	// Assign both clients only after both succeed to avoid partial init.
 	cfg.clientSet = clientSet
+	cfg.dynamicClient = dynClient
 
 	return nil
 }

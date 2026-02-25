@@ -57,6 +57,12 @@ The goal of the CLI is to make migrations predictable and reviewable, not to hid
     - Correct TLS-layer handling (not middleware)
     - Clear warnings for CA certificate and static configuration requirements
 
+- **cert-manager Certificate extraction** *(in progress)*
+    - Extracts live `Certificate` resources from the cluster via the Kubernetes dynamic client
+    - Falls back to generating a `Certificate` from `cert-manager.io/*` Ingress annotations when no live resource is found
+    - Sanitizes extracted resources for GitOps (removes `ownerReferences`, `resourceVersion`, `managedFields`, `status`, etc.)
+    - Prevents certificate loss when the original Ingress is deleted during migration
+
 - **Configuration snippets**
     - Converts **header-only** `configuration-snippet` directives
     - Detects and warns on unsafe or NGINX-specific directives

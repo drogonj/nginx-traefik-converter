@@ -43,9 +43,19 @@ const (
 	UseRegex                 Annotation = "nginx.ingress.kubernetes.io/use-regex"
 	ClientHeaderBufferSize   Annotation = "nginx.ingress.kubernetes.io/client-header-buffer-size"
 	LargeClientHeaderBuffers Annotation = "nginx.ingress.kubernetes.io/large-client-header-buffers"
+
+	// cert-manager annotations (used by ingress-shim to auto-create Certificate resources).
+	CertManagerClusterIssuer Annotation = "cert-manager.io/cluster-issuer"
+	CertManagerIssuer        Annotation = "cert-manager.io/issuer"
+	CertManagerIssuerKind    Annotation = "cert-manager.io/issuer-kind"
+	CertManagerIssuerGroup   Annotation = "cert-manager.io/issuer-group"
+	CertManagerCommonName    Annotation = "cert-manager.io/common-name"
+	CertManagerDuration      Annotation = "cert-manager.io/duration"
+	CertManagerRenewBefore   Annotation = "cert-manager.io/renew-before"
 )
 
-var AllAnnotations = []Annotation{
+// NginxAnnotations contains all supported nginx ingress controller annotations.
+var NginxAnnotations = []Annotation{
 	AuthType,
 	AuthSecret,
 	AuthRealm,
@@ -87,6 +97,21 @@ var AllAnnotations = []Annotation{
 	ClientHeaderBufferSize,
 	LargeClientHeaderBuffers,
 }
+
+// CertManagerAnnotations contains cert-manager annotations that the converter
+// uses to extract or generate Certificate resources.
+var CertManagerAnnotations = []Annotation{
+	CertManagerClusterIssuer,
+	CertManagerIssuer,
+	CertManagerIssuerKind,
+	CertManagerIssuerGroup,
+	CertManagerCommonName,
+	CertManagerDuration,
+	CertManagerRenewBefore,
+}
+
+// AllAnnotations is the union of all annotation families recognised by the converter.
+var AllAnnotations = append(NginxAnnotations, CertManagerAnnotations...)
 
 func (a Annotation) String() string {
 	return string(a)
