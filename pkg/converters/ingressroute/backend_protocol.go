@@ -7,19 +7,6 @@ import (
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/errors"
 )
 
-// NeedsIngressRoute makes the decision on requirement of ingress routes.
-func NeedsIngressRoute(ann map[string]string) bool {
-	if ann[string(models.GrpcBackend)] == "true" {
-		return true
-	}
-
-	if _, ok := ann[string(models.BackendProtocol)]; ok {
-		return true
-	}
-
-	return false
-}
-
 func resolveScheme(annotations map[string]string) (string, error) {
 	backendProto := strings.ToUpper(annotations[string(models.BackendProtocol)])
 	grpcBackend := annotations[string(models.GrpcBackend)] == "true"
@@ -51,16 +38,5 @@ func resolveScheme(annotations map[string]string) (string, error) {
 
 	default:
 		return "", &errors.ConverterError{Message: "unsupported backend-protocol"}
-	}
-}
-
-func entryPointsForScheme(scheme string) []string {
-	switch scheme {
-	case "https":
-		return []string{"websecure"}
-	case "h2c":
-		return []string{"web"}
-	default:
-		return []string{"web"}
 	}
 }
