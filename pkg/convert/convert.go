@@ -57,6 +57,7 @@ func Run(ctx configs.Context) error {
 	middleware.ProxyBuffering(ctx)
 	middleware.HandleAuthURL(ctx)
 	middleware.ProxyTimeouts(ctx)
+	middleware.WhitelistSourceRange(ctx)
 
 	sortMiddlewares(ctx.Result.Middlewares)
 

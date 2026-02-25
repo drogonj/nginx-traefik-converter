@@ -43,6 +43,7 @@ const (
 	UseRegex                 Annotation = "nginx.ingress.kubernetes.io/use-regex"
 	ClientHeaderBufferSize   Annotation = "nginx.ingress.kubernetes.io/client-header-buffer-size"
 	LargeClientHeaderBuffers Annotation = "nginx.ingress.kubernetes.io/large-client-header-buffers"
+	WhitelistSourceRange     Annotation = "nginx.ingress.kubernetes.io/whitelist-source-range"
 
 	// HSTS annotations — handled natively by nginx ingress controller but
 	// not translatable per-Ingress in Traefik (HSTS is set via headers middleware
@@ -112,6 +113,7 @@ var NginxAnnotations = []Annotation{
 	HSTSMaxAge,
 	HSTSPreload,
 	FromToWWWRedirect,
+	WhitelistSourceRange,
 }
 
 // CertManagerAnnotations contains cert-manager annotations that the converter
