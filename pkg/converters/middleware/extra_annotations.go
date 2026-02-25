@@ -77,4 +77,24 @@ via entryPoints.<name>.http.maxHeaderBytes in static configuration`
 		ctx.Result.Warnings = append(ctx.Result.Warnings, warningMessage)
 		ctx.ReportWarning(string(models.GrpcBackend), warningMessage)
 	}
+
+	// HSTS annotations: these are handled natively by the nginx ingress
+	// controller but in Traefik HSTS is configured via a headers middleware.
+	// If the Ingress also had a configuration-snippet with add_header
+	// Strict-Transport-Security, that header middleware was already generated.
+	for _, hstsAnn := range []models.Annotation{models.HSTS, models.HSTSIncludeSubdomains, models.HSTSMaxAge, models.HSTSPreload} {
+		if _, ok := ctx.Annotations[string(hstsAnn)]; ok {
+			ctx.ReportIgnored(string(hstsAnn),
+				"HSTS annotations are not supported per-Ingress in Traefik; use a headers middleware or Traefik static configuration instead")
+		}
+	}
+
+	// from-to-www-redirect — requires a Traefik RedirectRegex middleware that
+	// cannot be automatically generated (need to know the target domain).
+	if _, ok := ctx.Annotations[string(models.FromToWWWRedirect)]; ok {
+		msg := "from-to-www-redirect requires a Traefik RedirectRegex middleware; create one manually (e.g. regex: ^https://example\\.com/(.*), replacement: https://www.example.com/${1})"
+
+		ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+		ctx.ReportSkipped(string(models.FromToWWWRedirect), msg)
+	}
 }

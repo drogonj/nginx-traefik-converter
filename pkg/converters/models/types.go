@@ -44,6 +44,17 @@ const (
 	ClientHeaderBufferSize   Annotation = "nginx.ingress.kubernetes.io/client-header-buffer-size"
 	LargeClientHeaderBuffers Annotation = "nginx.ingress.kubernetes.io/large-client-header-buffers"
 
+	// HSTS annotations — handled natively by nginx ingress controller but
+	// not translatable per-Ingress in Traefik (HSTS is set via headers middleware
+	// or via the configuration-snippet add_header directive).
+	HSTS                  Annotation = "nginx.ingress.kubernetes.io/hsts"
+	HSTSIncludeSubdomains Annotation = "nginx.ingress.kubernetes.io/hsts-include-subdomains"
+	HSTSMaxAge            Annotation = "nginx.ingress.kubernetes.io/hsts-max-age"
+	HSTSPreload           Annotation = "nginx.ingress.kubernetes.io/hsts-preload"
+
+	// WWW redirect — not translatable automatically.
+	FromToWWWRedirect Annotation = "nginx.ingress.kubernetes.io/from-to-www-redirect"
+
 	// cert-manager annotations (used by ingress-shim to auto-create Certificate resources).
 	CertManagerClusterIssuer Annotation = "cert-manager.io/cluster-issuer"
 	CertManagerIssuer        Annotation = "cert-manager.io/issuer"
@@ -96,6 +107,11 @@ var NginxAnnotations = []Annotation{
 	UseRegex,
 	ClientHeaderBufferSize,
 	LargeClientHeaderBuffers,
+	HSTS,
+	HSTSIncludeSubdomains,
+	HSTSMaxAge,
+	HSTSPreload,
+	FromToWWWRedirect,
 }
 
 // CertManagerAnnotations contains cert-manager annotations that the converter
