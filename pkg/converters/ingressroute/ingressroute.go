@@ -22,7 +22,7 @@ import (
 func BuildIngressRoute(ctx configs.Context) error {
 	ing := ctx.Ingress
 
-	// 1️⃣ Resolve backend protocol ONCE (Ingress-wide)
+	// Resolve backend protocol ONCE (Ingress-wide).
 	scheme, err := resolveScheme(ctx.Annotations)
 	if err != nil {
 		return err
@@ -46,25 +46,59 @@ func BuildIngressRoute(ctx configs.Context) error {
 				continue
 			}
 
-			pathMatch, ok := buildPathMatch(path, useRegex)
-			if useRegex && !ok {
+			pathMatch, regexPromoted := buildPathMatch(path, useRegex)
+
+			// Warn when use-regex was set but the regex is invalid.
+			if useRegex && !regexPromoted && looksLikeRegex(path.Path) {
 				msg := fmt.Sprintf("use-regex is set but path '%s' is not a valid Go regex for Traefik; fell back to PathPrefix", path.Path)
 
 				ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
 				ctx.ReportWarning(string(models.UseRegex), msg)
 			}
 
+			// Warn when path was heuristically promoted to PathRegexp.
+			if !useRegex && regexPromoted {
+				msg := fmt.Sprintf(
+					"path '%s' contains regex patterns without use-regex annotation; "+
+						"auto-promoted to PathRegexp — verify behavior",
+					path.Path,
+				)
+
+				ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+				ctx.ReportWarning("path-regex-heuristic", msg)
+			}
+
+			// Warn when path looks like regex but doesn't compile.
+			if !useRegex && !regexPromoted && looksLikeRegex(path.Path) {
+				msg := fmt.Sprintf(
+					"path '%s' contains regex-like characters but is not a valid Go regex; "+
+						"fell back to PathPrefix — manual conversion required",
+					path.Path,
+				)
+
+				ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+				ctx.ReportSkipped("path-regex-heuristic", msg)
+			}
+
 			match := combineMatch(hostMatch, pathMatch)
 
-			// Build a stable dedup key
+			// Build the service port: prefer number, fall back to name.
+			svcPort := buildServicePort(svc.Port)
+
+			// Build a stable dedup key.
+			pathTypeStr := "Prefix"
+			if path.PathType != nil {
+				pathTypeStr = string(*path.PathType)
+			}
+
 			key := fmt.Sprintf(
-				"host=%s|path=%s|pathtype=%s|useregex=%t|svc=%s|port=%d|scheme=%s",
+				"host=%s|path=%s|pathtype=%s|useregex=%t|svc=%s|port=%s|scheme=%s",
 				rule.Host,
 				path.Path,
-				*path.PathType,
+				pathTypeStr,
 				useRegex,
 				svc.Name,
-				svc.Port.Number,
+				svcPort.String(),
 				scheme,
 			)
 
@@ -80,11 +114,8 @@ func BuildIngressRoute(ctx configs.Context) error {
 				Services: []traefik.Service{
 					{
 						LoadBalancerSpec: traefik.LoadBalancerSpec{
-							Name: svc.Name,
-							Port: intstr.IntOrString{
-								Type:   intstr.Int,
-								IntVal: svc.Port.Number,
-							},
+							Name:   svc.Name,
+							Port:   svcPort,
 							Scheme: scheme,
 						},
 					},
@@ -100,8 +131,9 @@ func BuildIngressRoute(ctx configs.Context) error {
 		return nil
 	}
 
-	// Determine entryPoints: frontend TLS (spec.tls) takes priority over backend scheme
-	entryPoints := entryPointsForScheme(scheme)
+	// EntryPoints are always "web" by default.
+	// Frontend TLS (spec.tls) promotes to "websecure".
+	entryPoints := []string{"web"}
 	if len(ing.Spec.TLS) > 0 {
 		entryPoints = []string{"websecure"}
 	}
@@ -121,10 +153,10 @@ func BuildIngressRoute(ctx configs.Context) error {
 		},
 	}
 
-	// Apply TLS from Ingress spec.tls (standard TLS termination)
+	// Apply TLS from Ingress spec.tls (standard TLS termination).
 	applyIngressTLS(ingressRoute, ing)
 
-	// Apply mTLS TLS Option if present (may extend TLS section)
+	// Apply mTLS TLS Option if present (may extend TLS section).
 	tls.ApplyTLSOption(ingressRoute, ctx)
 
 	ctx.Result.IngressRoutes = append(ctx.Result.IngressRoutes, ingressRoute)
@@ -136,6 +168,21 @@ func BuildIngressRoute(ctx configs.Context) error {
 	return nil
 }
 
+// buildServicePort returns an IntOrString for the Traefik service port.
+// It prefers the numeric port; when Number is 0 it falls back to Name.
+func buildServicePort(port netv1.ServiceBackendPort) intstr.IntOrString {
+	if port.Number != 0 {
+		return intstr.FromInt32(port.Number)
+	}
+
+	if port.Name != "" {
+		return intstr.FromString(port.Name)
+	}
+
+	// Both zero and empty — should not happen with valid Ingress.
+	return intstr.FromInt32(0)
+}
+
 func applyIngressTLS(ingressRoute *traefik.IngressRoute, ing *netv1.Ingress) {
 	if len(ing.Spec.TLS) == 0 {
 		return
@@ -145,7 +192,7 @@ func applyIngressTLS(ingressRoute *traefik.IngressRoute, ing *netv1.Ingress) {
 		ingressRoute.Spec.TLS = &traefik.TLS{}
 	}
 
-	// Use the first TLS entry's secretName
+	// Use the first TLS entry's secretName.
 	for _, t := range ing.Spec.TLS {
 		if t.SecretName != "" {
 			ingressRoute.Spec.TLS.SecretName = t.SecretName
@@ -155,45 +202,12 @@ func applyIngressTLS(ingressRoute *traefik.IngressRoute, ing *netv1.Ingress) {
 	}
 }
 
+// middlewareRefs builds MiddlewareRef entries from the already-sorted
+// Result.Middlewares slice (sorted by classify_middleware.go).
 func middlewareRefs(ctx configs.Context) []traefik.MiddlewareRef {
-	return orderMiddlewares(ctx.Result.Middlewares)
-}
+	refs := make([]traefik.MiddlewareRef, 0, len(ctx.Result.Middlewares))
 
-//nolint:varnamelen
-func orderMiddlewares(mws []*traefik.Middleware) []traefik.MiddlewareRef {
-	var (
-		conditional *traefik.Middleware
-		cors        *traefik.Middleware
-		rest        []*traefik.Middleware
-	)
-
-	for _, mw := range mws {
-		name := mw.GetName()
-
-		switch {
-		case strings.Contains(name, "conditional-return"):
-			conditional = mw
-
-		case strings.Contains(name, "cors") || strings.Contains(name, "headers"):
-			// your CORS/snippet headers middleware
-			cors = mw
-
-		default:
-			rest = append(rest, mw)
-		}
-	}
-
-	refs := make([]traefik.MiddlewareRef, 0, len(mws))
-
-	if conditional != nil {
-		refs = append(refs, traefik.MiddlewareRef{Name: conditional.GetName()})
-	}
-
-	if cors != nil {
-		refs = append(refs, traefik.MiddlewareRef{Name: cors.GetName()})
-	}
-
-	for _, mw := range rest {
+	for _, mw := range ctx.Result.Middlewares {
 		refs = append(refs, traefik.MiddlewareRef{Name: mw.GetName()})
 	}
 
@@ -208,36 +222,82 @@ func buildHostMatch(host string) string {
 	return fmt.Sprintf("Host(`%s`)", host)
 }
 
-func buildPathMatch(path netv1.HTTPIngressPath, useRegex bool) (string, bool) {
+// regexMetacharPattern detects regex metacharacters that never appear in
+// legitimate URL paths. It is intentionally conservative to avoid false
+// positives on normal paths that happen to contain characters like '.'.
+var regexMetacharPattern = regexp.MustCompile(
+	`\.\*` + // .*
+		`|\.\+` + // .+
+		`|\(\?[:]` + // (?:  non-capturing group
+		`|\[[^\]]+\]` + // [abc] character class
+		`|\\[dDwWsS.]` + // \d, \w, \. etc.
+		`|\{\d+,?\d*\}` + // {2}, {1,3} quantifiers
+		`|[^/]\|[^/]`, // alternation (but not double-slash)
+)
+
+// looksLikeRegex returns true when a path contains regex metacharacters
+// that would never appear in a normal URL path.
+func looksLikeRegex(path string) bool {
+	return regexMetacharPattern.MatchString(path)
+}
+
+// buildPathMatch produces the Traefik match expression for a single path.
+// The second return value (regexPromoted) is true when the path was
+// heuristically promoted from PathPrefix to PathRegexp.
+func buildPathMatch(path netv1.HTTPIngressPath, useRegex bool) (match string, regexPromoted bool) {
 	pth := path.Path
 	if pth == "" {
 		pth = "/"
 	}
 
+	// Explicit use-regex annotation: try to compile as Go regex.
 	if useRegex {
-		regex := pth
-		if !strings.HasPrefix(regex, "^") {
-			regex = "^" + regex
+		return buildRegexpMatch(pth)
+	}
+
+	// Heuristic: detect regex metacharacters even when use-regex is absent.
+	if looksLikeRegex(pth) {
+		if expr, ok := buildRegexpMatch(pth); ok {
+			// Auto-promoted — caller will emit a warning.
+			return expr, true
 		}
 
-		if _, err := regexp.Compile(regex); err == nil {
-			return fmt.Sprintf("PathRegexp(`%s`)", regex), true
-		}
-
-		// invalid regex
+		// Contains regex-like chars but does not compile as Go regex.
+		// Fall through to PathPrefix; caller will emit a different warning.
 		return fmt.Sprintf("PathPrefix(`%s`)", pth), false
 	}
 
-	switch *path.PathType {
-	case netv1.PathTypeExact:
-		return fmt.Sprintf("Path(`%s`)", pth), true
-	case netv1.PathTypePrefix:
-		return fmt.Sprintf("PathPrefix(`%s`)", pth), true
-	case netv1.PathTypeImplementationSpecific:
-		return fmt.Sprintf("PathPrefix(`%s`)", pth), true
-	default:
-		return fmt.Sprintf("PathPrefix(`%s`)", pth), true
+	// Normal path — use the declared pathType.
+	// Guard against nil PathType (possible on pre-v1.22 clusters).
+	pathType := netv1.PathTypePrefix
+	if path.PathType != nil {
+		pathType = *path.PathType
 	}
+
+	switch pathType {
+	case netv1.PathTypeExact:
+		return fmt.Sprintf("Path(`%s`)", pth), false
+	case netv1.PathTypePrefix:
+		return fmt.Sprintf("PathPrefix(`%s`)", pth), false
+	case netv1.PathTypeImplementationSpecific:
+		return fmt.Sprintf("PathPrefix(`%s`)", pth), false
+	default:
+		return fmt.Sprintf("PathPrefix(`%s`)", pth), false
+	}
+}
+
+// buildRegexpMatch anchors the path and compiles it as a Go regex.
+func buildRegexpMatch(pth string) (string, bool) {
+	regex := pth
+	if !strings.HasPrefix(regex, "^") {
+		regex = "^" + regex
+	}
+
+	if _, err := regexp.Compile(regex); err == nil {
+		return fmt.Sprintf("PathRegexp(`%s`)", regex), true
+	}
+
+	return fmt.Sprintf("PathPrefix(`%s`)", pth), false
 }
 
 func combineMatch(hostMatch, pathMatch string) string {
