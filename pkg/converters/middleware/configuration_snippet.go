@@ -565,6 +565,21 @@ func parseResponseHeader(line string) (string, string, bool) {
 			return "", "", false
 		}
 
+		// Strip the trailing "always" parameter — it is an nginx directive
+		// option (send header even on error responses), not part of the value.
+		// Only strip when there are 4+ fields (directive + name + value + always);
+		// with exactly 3 fields the third token IS the value, even if it
+		// happens to be the word "always".
+		const alwaysMinFields = 4
+
+		if len(fields) >= alwaysMinFields && strings.EqualFold(fields[len(fields)-1], "always") {
+			fields = fields[:len(fields)-1]
+		}
+
+		if len(fields) < addHeaderCount {
+			return "", "", false
+		}
+
 		return strings.Trim(fields[1], `"`),
 			strings.Trim(strings.Join(fields[2:], " "), `"`),
 			true
