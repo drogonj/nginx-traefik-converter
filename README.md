@@ -39,6 +39,8 @@ The goal of the CLI is to make migrations predictable and reviewable, not to hid
 
 ### Supported annotation handling
 
+(Full list of supported annotations in:  **pkg/converters/types.go**)
+
 - **HTTP behavior**
     - Path rewrites
     - HTTP → HTTPS redirects
@@ -140,43 +142,28 @@ The goal is **correctness, transparency, and safety**, not “make it work at an
 ---
 ## Installation
 
-* Recommend installing released versions. Release binaries are available on the [releases](https://github.com/nikhilsbhat/nginx-traefik-converter/releases) page.
-
-#### Homebrew
-
-Install latest version on `nginx-traefik-converter` on `macOS`
-
-```shell
-brew tap nikshilsbhat/stable git@github.com:nikhilsbhat/homebrew-stable.git
-# for latest version
-brew install nikshilsbhat/stable/nginx-traefik-converter
-# for specific version
-brew install nikshilsbhat/stable/nginx-traefik-converter@0.0.3
-```
-
-Check [repo](https://github.com/nikhilsbhat/homebrew-stable) for all available versions of the formula.
-
-#### Docker
-
-Latest version of docker images are published to [ghcr.io](https://github.com/nikhilsbhat/nginx-traefik-converter/pkgs/container/nginx-traefik-converter), all available images can be found there. </br>
-
-```bash
-docker pull ghcr.io/nikhilsbhat/nginx-traefik-converter:latest
-docker pull ghcr.io/nikhilsbhat/nginx-traefik-converter:<github-release-tag>
-```
-
 #### Build from Source
+
+Install dependencies:
+```sh
+go install golang.org/x/tools/cmd/goimports@latest
+go install mvdan.cc/gofumpt@latest
+go install github.com/daixiang0/gci@latest
+```
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/nikhilsbhat/nginx-traefik-converter.git
+    git clone https://github.com/drogonj/nginx-traefik-converter.git
     cd nginx-traefik-converter
     ```
 2. Build the project:
     ```sh
-    make local.build
+    make local/build
     ```
-
+    or for a static binarie:
+    ```sh
+    make local/staticbuild
+    ```
 ---
 
 ## Usage
