@@ -32,7 +32,6 @@ func Run(ctx configs.Context) error {
 	}
 
 	middleware.RewriteTargets(ctx)
-	middleware.SSLRedirect(ctx)
 
 	if err := middleware.RateLimit(ctx); err != nil {
 		return err
@@ -64,6 +63,8 @@ func Run(ctx configs.Context) error {
 	if err := ingressroute.BuildIngressRoute(ctx); err != nil {
 		ctx.Result.Warnings = append(ctx.Result.Warnings, err.Error())
 	}
+
+	middleware.SSLRedirect(ctx) // must run after BuildIngressRoute
 
 	tls.HandleAuthTLSVerifyClient(ctx)
 

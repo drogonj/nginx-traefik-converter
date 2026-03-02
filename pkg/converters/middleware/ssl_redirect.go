@@ -65,7 +65,7 @@ func SSLRedirect(ctx configs.Context) {
 	// }
 
 	if len(ctx.Result.IngressRoutes) != 1 {
-		ctx.ReportSkipped(annSSLRedirect, "len(IngressRoutes) != 1, cannot determine which IngressRoute to apply the redirect to")
+		ctx.ReportSkipped(annSSLRedirect, fmt.Sprintf("len(IngressRoutes) is %d, cannot determine which IngressRoute to apply the redirect to", len(ctx.Result.IngressRoutes)))
 		return
 	}
 
