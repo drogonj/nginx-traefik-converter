@@ -35,6 +35,7 @@ func BodySize(ctx configs.Context) error {
 
 	// A value of 0 means "unlimited" in nginx, which is Traefik's default behaviour.
 	if intValue == 0 {
+		ctx.ReportIgnored(ann, "value of 0 means 'unlimited' in nginx, which is Traefik's default behaviour")
 		return nil
 	}
 
