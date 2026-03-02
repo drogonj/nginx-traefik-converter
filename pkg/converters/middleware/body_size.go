@@ -34,8 +34,6 @@ func BodySize(ctx configs.Context) error {
 	}
 
 	// A value of 0 means "unlimited" in nginx, which is Traefik's default behaviour.
-	// Creating a Buffering middleware with MaxRequestBodyBytes=0 would still enable buffering
-	// (changing request streaming behaviour), so we skip it entirely.
 	if intValue == 0 {
 		return nil
 	}
