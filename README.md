@@ -59,6 +59,12 @@ The goal of the CLI is to make migrations predictable and reviewable, not to hid
     - Correct TLS-layer handling (not middleware)
     - Clear warnings for CA certificate and static configuration requirements
 
+- **Wildcard host support**
+    - Wildcard hosts (e.g. `*.pages.example.com`) are converted to Traefik `HostRegexp()` matchers
+    - Generates a proper Go regex: `^[a-zA-Z0-9-]+\.pages\.example\.com$`
+    - Adds `tls.domains` entries for wildcard certificates so Traefik can match SNI correctly
+    - Emits a warning for each wildcard host so the generated regex can be reviewed
+
 - **cert-manager Certificate extraction** *(in progress)*
     - Extracts live `Certificate` resources from the cluster via the Kubernetes dynamic client
     - Falls back to generating a `Certificate` from `cert-manager.io/*` Ingress annotations when no live resource is found
@@ -94,6 +100,24 @@ The goal of the CLI is to make migrations predictable and reviewable, not to hid
 - Produces deterministic output suitable for code review
 - Intended as a **migration aid**, not a black-box replacement
 - Aligns with Traefik v3 CRDs and best practices
+
+### Migration-safe naming (`-converted` suffix)
+
+All generated resources are created with a `-converted` suffix appended to their `metadata.name`. This prevents naming conflicts with the original Ingress resources during migration.
+
+This supports the following migration workflow:
+
+1. **Generate** — Run `nginx-traefik-converter` to produce converted Traefik CRDs (IngressRoute, Middleware, TLSOption, Certificate) with `-converted` names
+2. **Apply & test** — Apply the converted resources alongside the existing NGINX Ingresses for side-by-side validation
+3. **Switch** — Switch the cluster to Traefik, remove the NGINX Ingress Controller
+4. **Finalize** — Update your Helm values / CI/CD to produce the definitive Traefik resources (without the suffix), then delete the temporary `-converted` CRDs
+
+| Resource type | Example name |
+|---|---|
+| IngressRoute | `my-app-converted` |
+| Middleware | `my-app-converted-bodysize` |
+| TLSOption | `my-app-converted-mtls` |
+| Certificate | `my-tls-secret-converted` |
 
 ---
 
