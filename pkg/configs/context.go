@@ -32,11 +32,14 @@ type Context struct {
 	Log             *slog.Logger
 }
 
+// append to prevent conflitcs with existing/future IngressRoute names
+const ConvertedSuffix = "-converted"
+
 // New returns a new instance of Context when invoked.
 func New(ingress *netv1.Ingress, result *Result, options *Options, logger *slog.Logger) *Context {
 	return &Context{
 		Ingress:     ingress,
-		IngressName: ingress.Name,
+		IngressName: ingress.Name + ConvertedSuffix,
 		Namespace:   ingress.Namespace,
 		Annotations: ingress.Annotations,
 		Result:      result,

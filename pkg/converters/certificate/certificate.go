@@ -112,6 +112,9 @@ func tryExtract(ctx configs.Context, secretName string) bool {
 	// Sanitize the live resource for GitOps.
 	kubernetes.SanitizeCertificateForGitOps(cert)
 
+	// Suffix the name so the converted Certificate doesn't clash with the original.
+	cert.SetName(cert.GetName() + configs.ConvertedSuffix)
+
 	ctx.Result.Certificates = append(ctx.Result.Certificates, cert)
 	ctx.ReportConverted("cert-manager/certificate")
 
@@ -143,7 +146,7 @@ func tryGenerate(ctx configs.Context, secretName string, hosts []string) bool {
 			"apiVersion": certManagerAPIVersion,
 			"kind":       certManagerKind,
 			"metadata": map[string]interface{}{
-				"name":      secretName,
+				"name":      secretName + configs.ConvertedSuffix,
 				"namespace": ctx.Namespace,
 			},
 			"spec": map[string]interface{}{

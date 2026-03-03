@@ -154,7 +154,7 @@ func BuildIngressRoute(ctx configs.Context) error {
 			Kind:       "IngressRoute",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ing.Name,
+			Name:      ing.Name + configs.ConvertedSuffix,
 			Namespace: ing.Namespace,
 		},
 		Spec: traefik.IngressRouteSpec{
