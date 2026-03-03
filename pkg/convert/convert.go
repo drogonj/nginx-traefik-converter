@@ -16,6 +16,8 @@ import (
 // It is the core function responsible for converting NGINX Ingress
 // annotations into their Traefik equivalents.
 func Run(ctx configs.Context) error {
+	warnHelmManagedIngress(ctx)
+
 	if err := middleware.CORS(ctx); err != nil {
 		return err
 	}
@@ -135,4 +137,25 @@ func hasAnyPrefix(s string, prefixes []string) bool {
 	}
 
 	return false
+}
+
+func warnHelmManagedIngress(ctx configs.Context) {
+	if ctx.Ingress == nil {
+		return
+	}
+
+	indicators := configs.DetectHelmIndicators(ctx.Ingress.Labels, ctx.Ingress.Annotations)
+	if len(indicators) == 0 {
+		return
+	}
+
+	msg := fmt.Sprintf(
+		"Ingress %q in namespace %q appears to be managed by Helm (%s). "+
+			"Helm upgrades may recreate or override this resource, undoing migration changes. "+
+			"Ensure the Helm release is updated or removed before completing the migration.",
+		ctx.IngressName, ctx.Namespace, strings.Join(indicators, ", "),
+	)
+
+	ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+	ctx.ReportWarning("helm-managed", msg)
 }
