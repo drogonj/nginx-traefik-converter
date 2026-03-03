@@ -9,6 +9,7 @@ import (
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/converters/models"
 	"github.com/nikhilsbhat/nginx-traefik-converter/pkg/converters/tls"
 	traefik "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	traefiktypes "github.com/traefik/traefik/v3/pkg/types"
 	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -39,6 +40,15 @@ func BuildIngressRoute(ctx configs.Context) error {
 		}
 
 		hostMatch := buildHostMatch(rule.Host)
+
+		if isWildcardHost(rule.Host) {
+			msg := fmt.Sprintf(
+				"wildcard host %q converted to HostRegexp matcher; verify the generated regex",
+				rule.Host,
+			)
+			ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+			ctx.ReportConverted("wildcard-host")
+		}
 
 		for _, path := range rule.HTTP.Paths {
 			svc := path.Backend.Service
@@ -200,6 +210,17 @@ func applyIngressTLS(ingressRoute *traefik.IngressRoute, ing *netv1.Ingress) {
 			break
 		}
 	}
+
+	// Add wildcard domains to TLS.Domains so Traefik can match SNI
+	for _, rule := range ing.Spec.Rules {
+		if isWildcardHost(rule.Host) {
+			ingressRoute.Spec.TLS.Domains = append(ingressRoute.Spec.TLS.Domains,
+				traefiktypes.Domain{
+					Main: rule.Host,
+				},
+			)
+		}
+	}
 }
 
 // middlewareRefs builds MiddlewareRef entries from the already-sorted
@@ -214,9 +235,26 @@ func middlewareRefs(ctx configs.Context) []traefik.MiddlewareRef {
 	return refs
 }
 
+func isWildcardHost(host string) bool {
+	return strings.HasPrefix(host, "*.")
+}
+
+func wildcardHostToRegexp(host string) string {
+	// Strip the leading "*."
+	base := host[2:]
+	// Escape dots in the remaining hostname.
+	escaped := strings.ReplaceAll(base, ".", `\.`)
+
+	return `^[a-zA-Z0-9-]+\.` + escaped + `$`
+}
+
 func buildHostMatch(host string) string {
 	if host == "" {
 		return ""
+	}
+
+	if isWildcardHost(host) {
+		return fmt.Sprintf("HostRegexp(`%s`)", wildcardHostToRegexp(host))
 	}
 
 	return fmt.Sprintf("Host(`%s`)", host)
