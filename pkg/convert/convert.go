@@ -16,7 +16,9 @@ import (
 // It is the core function responsible for converting NGINX Ingress
 // annotations into their Traefik equivalents.
 func Run(ctx configs.Context) error {
-	warnHelmManagedIngress(ctx)
+	if ctx.Options != nil && ctx.Options.HelmWarnings {
+		warnHelmManagedIngress(ctx)
+	}
 
 	if err := middleware.CORS(ctx); err != nil {
 		return err

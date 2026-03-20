@@ -18,6 +18,7 @@ nginx-traefik-converter convert [flags]
       --disable-plugins          when enabled won't consider the plugins while creating middlewares
   -f, --file stringArray         root yaml files to be used for importing
   -h, --help                     help for convert
+      --helm-warnings            when enabled warns if an Ingress appears to be managed by Helm
       --ingress-file string      path to ingress file
       --log-level string         log level for the nginx-traefik-converter (default "INFO")
   -n, --namespace string         kubernetes namespace to set (default "default")

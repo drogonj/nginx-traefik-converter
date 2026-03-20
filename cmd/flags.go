@@ -49,6 +49,8 @@ func registerImportFlags(cmd *cobra.Command) {
 		"name of the file to which the final imported yaml should be written to")
 	cmd.PersistentFlags().BoolVarP(&printerConfig.Table, "table", "", false,
 		"when enabled prints output in table format")
+	cmd.PersistentFlags().BoolVarP(&opts.HelmWarnings, "helm-warnings", "", false,
+		"when enabled warns if an Ingress appears to be managed by Helm")
 	cmd.PersistentFlags().BoolVarP(&opts.DisablePlugins, "disable-plugins", "", false,
 		"when enabled won't consider the plugins while creating middlewares")
 	cmd.PersistentFlags().BoolVarP(&opts.ProxyBufferHeuristic, "proxy-buffer-heuristic", "", false,
