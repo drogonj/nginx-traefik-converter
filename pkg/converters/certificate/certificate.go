@@ -97,16 +97,18 @@ func tryExtract(ctx configs.Context, secretName string) bool {
 
 	// Warn if the extracted Certificate is Helm-managed. Helm upgrades may
 	// recreate the resource and undo sanitization or annotation changes.
-	if indicators := configs.DetectHelmIndicators(cert.GetLabels(), cert.GetAnnotations()); len(indicators) != 0 {
-		msg := fmt.Sprintf(
-			"Certificate %q (secret %q, namespace %q) appears to be managed by Helm (%s). "+
-				"Helm upgrades may recreate or override this resource. "+
-				"Ensure the Helm release is updated or removed before completing the migration.",
-			cert.GetName(), secretName, ctx.Namespace, strings.Join(indicators, ", "),
-		)
+	if ctx.Options != nil && ctx.Options.HelmWarnings {
+		if indicators := configs.DetectHelmIndicators(cert.GetLabels(), cert.GetAnnotations()); len(indicators) != 0 {
+			msg := fmt.Sprintf(
+				"Certificate %q (secret %q, namespace %q) appears to be managed by Helm (%s). "+
+					"Helm upgrades may recreate or override this resource. "+
+					"Ensure the Helm release is updated or removed before completing the migration.",
+				cert.GetName(), secretName, ctx.Namespace, strings.Join(indicators, ", "),
+			)
 
-		ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
-		ctx.ReportWarning("helm-managed-cert", msg)
+			ctx.Result.Warnings = append(ctx.Result.Warnings, msg)
+			ctx.ReportWarning("helm-managed-cert", msg)
+		}
 	}
 
 	// Sanitize the live resource for GitOps.
