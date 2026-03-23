@@ -32,6 +32,7 @@ const (
 	ProxyReadTimeout         Annotation = "nginx.ingress.kubernetes.io/proxy-read-timeout"
 	ProxySendTimeout         Annotation = "nginx.ingress.kubernetes.io/proxy-send-timeout"
 	RewriteTarget            Annotation = "nginx.ingress.kubernetes.io/rewrite-target"
+	PermanentRedirect        Annotation = "nginx.ingress.kubernetes.io/permanent-redirect"
 	SSLRedirect              Annotation = "nginx.ingress.kubernetes.io/ssl-redirect"
 	ForceSSLRedirect         Annotation = "nginx.ingress.kubernetes.io/force-ssl-redirect"
 	UpstreamVhost            Annotation = "nginx.ingress.kubernetes.io/upstream-vhost"
@@ -97,6 +98,7 @@ var NginxAnnotations = []Annotation{
 	ProxyReadTimeout,
 	ProxySendTimeout,
 	RewriteTarget,
+	PermanentRedirect,
 	SSLRedirect,
 	ForceSSLRedirect,
 	UpstreamVhost,
