@@ -36,6 +36,7 @@ func Run(ctx configs.Context) error {
 	}
 
 	middleware.RewriteTargets(ctx)
+	middleware.AppRoot(ctx)
 	middleware.PermanentRedirect(ctx)
 
 	if err := middleware.RateLimit(ctx); err != nil {

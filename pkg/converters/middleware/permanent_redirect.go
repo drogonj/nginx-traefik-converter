@@ -44,12 +44,6 @@ func PermanentRedirect(ctx configs.Context) {
 		return
 	}
 
-	replacement := target
-	if !strings.Contains(target, "${1}") && !strings.Contains(target, "$1") {
-		// Preserve request path when the redirect target does not already use capture groups.
-		replacement += "${1}"
-	}
-
 	ctx.Result.Middlewares = append(ctx.Result.Middlewares, &traefik.Middleware{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: traefik.SchemeGroupVersion.String(),
@@ -61,8 +55,8 @@ func PermanentRedirect(ctx configs.Context) {
 		},
 		Spec: traefik.MiddlewareSpec{
 			RedirectRegex: &dynamic.RedirectRegex{
-				Regex:       "^https?://[^/]+(/.*)?$",
-				Replacement: replacement,
+				Regex:       "^https?://[^/?#]+(?:/.*)?(?:\\?.*)?$",
+				Replacement: target,
 				Permanent:   true,
 			},
 		},
