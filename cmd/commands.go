@@ -73,7 +73,7 @@ func getConvertCommand() *cobra.Command {
 					continue
 				}
 
-				if err = render.WriteYAML(*res, filepath.Join("./out", ingress.Name)); err != nil {
+				if err = render.WriteYAML(*res, filepath.Join("./out", ingress.Namespace, ingress.Name)); err != nil {
 					logger.Error("writing converted traefik ingress errored",
 						slog.String("ingress", ingress.Name),
 						slog.String("error", err.Error()))
