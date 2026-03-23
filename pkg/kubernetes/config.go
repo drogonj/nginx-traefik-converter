@@ -39,7 +39,7 @@ func (cfg *Config) SetKubeClient() error {
 	cfg.logger.Debug("found kubeconfig", slog.Any("kubeConfig", kubeConfig))
 	cfg.logger.Debug("using context", slog.Any("context", cfg.Context))
 
-	config, err := buildConfigWithContextFromFlags(cfg.Context, kubeConfig)
+	config, err := buildKubeClientConfig(cfg.Context, kubeConfig, cfg.logger)
 	if err != nil {
 		cfg.logger.Error("failed to load Kubernetes config", slog.Any("error", err))
 
@@ -82,8 +82,10 @@ func (cfg *Config) GetKubeClient() *kubernetes.Clientset {
 }
 
 func buildConfigWithContextFromFlags(kubeContext, kubeConfigPath string) (*rest.Config, error) {
-	loadingRules := &clientcmd.ClientConfigLoadingRules{}
-	loadingRules.Precedence = strings.Split(kubeConfigPath, string(os.PathListSeparator))
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if strings.TrimSpace(kubeConfigPath) != "" {
+		loadingRules.Precedence = strings.Split(kubeConfigPath, string(os.PathListSeparator))
+	}
 
 	configOverrides := &clientcmd.ConfigOverrides{
 		CurrentContext: kubeContext,
@@ -93,6 +95,25 @@ func buildConfigWithContextFromFlags(kubeContext, kubeConfigPath string) (*rest.
 		loadingRules,
 		configOverrides,
 	).ClientConfig()
+}
+
+func buildKubeClientConfig(kubeContext, kubeConfigPath string, logger *slog.Logger) (*rest.Config, error) {
+	// When context or KUBECONFIG is explicitly provided, keep the current CLI semantics.
+	if strings.TrimSpace(kubeContext) != "" || strings.TrimSpace(kubeConfigPath) != "" {
+		return buildConfigWithContextFromFlags(kubeContext, kubeConfigPath)
+	}
+
+	// Prefer in-cluster auth when running inside Kubernetes with a ServiceAccount.
+	config, err := rest.InClusterConfig()
+	if err == nil {
+		logger.Debug("using in-cluster Kubernetes configuration")
+
+		return config, nil
+	}
+
+	logger.Debug("in-cluster configuration unavailable, falling back to default kubeconfig", slog.Any("error", err))
+
+	return buildConfigWithContextFromFlags("", "")
 }
 
 // SetLogger sets logger to the Config.

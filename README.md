@@ -202,6 +202,18 @@ nginx-traefik-converter convert -c kube-context-one                  #when you h
 nginx-traefik-converter convert -c kube-context-one -n namespace-one #adding to above, operations limited to namespace 'namespace-one'  
 ```
 
+When running inside a Kubernetes pod with a `serviceAccountName`, the CLI
+automatically tries in-cluster auth (`rest.InClusterConfig()`) if neither
+`--context` nor `KUBECONFIG` is provided.
+
+```sh
+# inside a pod/container, use ServiceAccount token mounted by Kubernetes
+nginx-traefik-converter convert -a
+```
+
+For local development, it still falls back to the default kubeconfig lookup
+(`$KUBECONFIG` or `~/.kube/config`).
+
 ## Documentation
 
 Updated documentation on all available commands and flags can be
