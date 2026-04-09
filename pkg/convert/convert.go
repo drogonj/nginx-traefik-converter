@@ -75,8 +75,10 @@ func Run(ctx configs.Context) error {
 	tls.HandleAuthTLSVerifyClient(ctx)
 
 	// Extract or generate cert-manager Certificate resources.
-	certificate.ExtractOrGenerate(ctx)
-
+	if ctx.Options.CopyCertificates {
+		certificate.ExtractOrGenerate(ctx)
+	}
+	
 	// Warn about any nginx.ingress.kubernetes.io/* annotations that are
 	// present on the Ingress but not recognised by the converter.
 	warnUnknownAnnotations(ctx)

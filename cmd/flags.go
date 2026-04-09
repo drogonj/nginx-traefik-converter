@@ -51,6 +51,8 @@ func registerImportFlags(cmd *cobra.Command) {
 		"when enabled prints output in table format")
 	cmd.PersistentFlags().BoolVarP(&opts.HelmWarnings, "helm-warnings", "", false,
 		"when enabled warns if an Ingress appears to be managed by Helm")
+	cmd.PersistentFlags().BoolVarP(&opts.CopyCertificates, "copy-certificates", "", false,
+		"when enabled make a copy of the Certificates resources")
 	cmd.PersistentFlags().BoolVarP(&opts.DisablePlugins, "disable-plugins", "", false,
 		"when enabled won't consider the plugins while creating middlewares")
 	cmd.PersistentFlags().BoolVarP(&opts.ProxyBufferHeuristic, "proxy-buffer-heuristic", "", false,
